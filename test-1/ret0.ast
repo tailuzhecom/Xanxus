@@ -1,0 +1,24 @@
+#5
+_program
+  #5
+  _class
+    Main
+    Object
+    "ret0.cl"
+    (
+    #4
+    _method
+      main
+      Int
+      #4
+      _plus
+        #3
+        _int
+          1
+        : Int
+        #3
+        _int
+          2
+        : Int
+      : Int
+    )
