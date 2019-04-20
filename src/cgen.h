@@ -40,6 +40,7 @@ using namespace llvm;
 llvm::LLVMContext xanxus_context;
 llvm::IRBuilder<> xanxus_builder(xanxus_context);
 std::unique_ptr<llvm::Module> xanxus_module = make_unique<Module>("Xanxus", xanxus_context);
+std::map<std::string, Type*> types_map; // 将所有声明的StructType类型都存储在这里
 
 class CgenClassTable : public cool::SymbolTable<Symbol,CgenNode> 
 {
@@ -71,9 +72,9 @@ private:
 	void setup_external_functions();
 	void setup_classes(CgenNode *c, int depth);
 
-#ifdef MP3
+
 	void code_classes(CgenNode *c);
-#endif
+
 
 	// The following creates an inheritance graph from a list of classes.  
 	// The graph is implemented as a tree of `CgenNode', and class names 
@@ -162,6 +163,10 @@ public:
 	// ADD CODE HERE
 	string get_type_name() { return string(name->get_string()); }
 
+	void setup_attr_types(Symbol type_decl, CgenNode *cls);
+	Type* convert_symbol_to_type(const Symbol& sym);
+	void vtable_push_back(Value *vtable_item) { vtable_vec.push_back(vtable_item); }
+
 
 private:
 	// Layout the methods and attributes for code generation
@@ -169,6 +174,8 @@ private:
 	void layout_features();
 
 	// ADD CODE HERE
+	vector<Type*> attr_types;  // used to construct class_type
+	vector<Value*> vtable_vec;  // used to construct vtable
 
 };
 
@@ -185,7 +192,7 @@ class CgenEnvironment
 
 private:
 	// mapping from variable names to memory locations
-	cool::SymbolTable<Symbol,Value> var_table;
+	cool::SymbolTable<std::string,Value> var_table;
 
 	// Keep counters for unique name generation in the current method
 	int block_count;
@@ -199,22 +206,17 @@ private:
 public:
 	std::ostream *cur_stream;
 
-	// fresh name generation functions
-	string new_name();
-	string new_ok_label();
-	const string new_label(const std::string& prefix, bool increment);
-
 	// Used in provided code for the (case..of) construct
 	string next_label;
 	operand branch_operand;    
-	void add_local(Symbol name, Value *vb);
+	void add_local(std::string name, Value *vb);
 	void kill_local();
 	// end of helpers for provided code
 
-	CgenEnvironment(ostream &strea, CgenNode *cur_class);
+	CgenEnvironment(ostream &stream, CgenNode *cur_class);
 
 
-	Value* lookup(Symbol name)	{ return var_table.lookup(name); }
+	Value* lookup(std::string name)	{ return var_table.lookup(name); }
     
 	CgenNode *get_class() { return cur_class; }
 	void set_class(CgenNode *c) { cur_class = c; }
@@ -230,7 +232,7 @@ public:
 // Utitlity function
 // Generate any code necessary to convert from given operand to
 // dest_type, assuing it has already been checked to be compatible
-operand conform(operand src, op_type dest_type, CgenEnvironment *env);
+Value* conform(operand src, op_type dest_type, CgenEnvironment *env);
 // Retrieve the class tag from operand src. Argument is the cgen node for
 // the static class of src.
-operand get_class_tag(operand src, CgenNode *src_cls, CgenEnvironment *env);
+Value* get_class_tag(operand src, CgenNode *src_cls, CgenEnvironment *env);

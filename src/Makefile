@@ -18,7 +18,7 @@ cgen-1.o: cgen.cc cgen.h cool-tree.handcode.h $(MPINCL)
 	$(CXX) -c $(CXXFLAGS) $(CPPFLAGS) $< -o $@
 
 cgen-2: cgen-2.o $(SUPPORT_OBJS)
-	$(CXX) -o $@ $(LDFLAGS)  $+ $(LDLIBS)
+	$(CXX) -o $@ $(LDFLAGS) $(LLVMLIBS) $+ $(LDLIBS)
 
 cgen-2.o : cgen.cc cgen.h cool-tree.handcode.h $(MPINCL)
 	$(CXX) -c $(CXXFLAGS) $(CPPFLAGS) -DMP3 $<  -o $@

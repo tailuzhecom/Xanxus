@@ -208,9 +208,11 @@ void CgenClassTable::install_basic_classes()
 	install_special_class(new CgenNode(primstringcls, CgenNode::Basic, this));
 	delete primstringcls;
 #endif
+	// Int class
 	Class_ primintcls = class_(prim_int,No_class,nil_Features(),filename);
 	install_special_class(new CgenNode(primintcls, CgenNode::Basic, this));
 	delete primintcls;
+	// Bool class
 	Class_ primboolcls = class_(prim_bool,No_class,nil_Features(),filename);
 	install_special_class(new CgenNode(primboolcls, CgenNode::Basic, this));
 	delete primboolcls;
@@ -223,6 +225,7 @@ void CgenClassTable::install_basic_classes()
 	// There is no need for method bodies in the basic classes---these
 	// are already built in to the runtime system.
 	//
+	// Object class
 	Class_ objcls =
 		class_(Object, 
 		       No_class,
@@ -449,10 +452,7 @@ CgenNode* CgenClassTable::getMainmain(CgenNode* c)
 //
 void CgenClassTable::code_constants()
 {
-#ifdef MP3
 
-	// ADD CODE HERE
-#endif
 }
 
 // generate code to define a global string constant
@@ -561,14 +561,14 @@ void CgenClassTable::code_module()
 }
 
 
-#ifdef MP3
+
 void CgenClassTable::code_classes(CgenNode *c)
 {
 
 	// ADD CODE HERE
 
 }
-#endif
+
 
 
 //
@@ -666,15 +666,23 @@ void CgenNode::set_parentnd(CgenNode *p)
 void CgenNode::setup(int tag, int depth)
 {
 	this->tag = tag;
-#ifdef MP3
-	layout_features();
-
-	// ADD CODE HERE
-
-#endif
+	this->layout_features();
 }
 
-#ifdef MP3
+// V3
+// Laying out the features involves creating a Function for each method
+// and assigning each attribute a slot in the class structure.
+void CgenNode::layout_features()
+{
+	// ADD CODE HERE
+	// 调用attr和method的layout_feature(CgenNode*)
+	for (int i = features->first(); features->more(i); i = features->next(i))
+		features->nth(i)->layout_feature(this);
+
+
+}
+
+
 //
 // Class codegen. This should performed after every class has been setup.
 // Generate code for each method of the class.
@@ -688,13 +696,8 @@ void CgenNode::code_class()
 	// ADD CODE HERE
 }
 
-// Laying out the features involves creating a Function for each method
-// and assigning each attribute a slot in the class structure.
-void CgenNode::layout_features()
-{
-	// ADD CODE HERE
-}
-#else
+
+#ifndef MP3
 
 // 
 // code-gen function main() in class Main
@@ -747,27 +750,8 @@ CgenNode *CgenEnvironment::type_to_class(Symbol t) {
 		: get_class()->get_classtable()->lookup(t);
 }
 
-// Provided CgenEnvironment methods
-// Generate unique string names
-std::string CgenEnvironment::new_name() {
-	std::stringstream s;
-	s << tmp_count++;
-	return "tmp." + s.str();
-}
 
-std::string CgenEnvironment::new_ok_label() {
-	std::stringstream s;
-	s << ok_count++;
-	return "ok." + s.str();
-}
-const std::string CgenEnvironment::new_label(const std::string& prefix,
-		bool increment) {
-	std::string suffix = itos(block_count);
-	block_count += increment;
-	return prefix + suffix;
-}
-
-void CgenEnvironment::add_local(Symbol name, Value *vb) {
+void CgenEnvironment::add_local(std::string name, Value *vb) {
 	var_table.enterscope();
 	var_table.addid(name, vb);
 
@@ -801,18 +785,18 @@ void CgenEnvironment::kill_local() {
 // is known to be (dynamically) compatible with the target type.
 // It should only be called when this condition holds.
 // (It's needed by the supplied code for typecase)
-operand conform(operand src, op_type type, CgenEnvironment *env) {
+Value* conform(operand src, op_type type, CgenEnvironment *env) {
 	// ADD CODE HERE (MP3 ONLY)
-	return operand();
+	return nullptr;
 }
 
 // Retrieve the class tag from an object record.
 // src is the object we need the tag from.
 // src_class is the CgenNode for the *static* class of the expression.
 // You need to look up and return the class tag for it's dynamic value
-operand get_class_tag(operand src, CgenNode *src_cls, CgenEnvironment *env) {
+Value* get_class_tag(operand src, CgenNode *src_cls, CgenEnvironment *env) {
 	// ADD CODE HERE (MP3 ONLY)
-	return operand();
+	return nullptr;
 }
 #endif
 
@@ -836,7 +820,7 @@ Value* assign_class::code(CgenEnvironment *env)
 	if (cgen_debug) std::cerr << "assign" << endl;
 	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
 	// MORE MEANINGFUL
-	Value *var = env->lookup(name);
+	Value *var = env->lookup(name->get_string());
 	Value *assign_val = expr->code(env);
 	xanxus_builder.CreateStore(assign_val, var, false);
 	return assign_val;
@@ -931,7 +915,7 @@ Value* let_class::code(CgenEnvironment *env)
 	else if(type_str == "Int")
 		param = xanxus_builder.CreateAlloca(Type::getInt32Ty(xanxus_context), nullptr, identifier->get_string());
 
-	env->add_local(identifier, param);
+	env->add_local(identifier->get_string(), param);
 
 	// init val
 	Value *param_val = init->code(env);
@@ -1145,11 +1129,34 @@ Value* isvoid_class::code(CgenEnvironment *env)
 // Create the LLVM Function corresponding to this method.
 void method_class::layout_feature(CgenNode *cls) 
 {
-#ifndef MP3
-	assert(0 && "Unsupported case for phase 1");
-#else
-	// ADD CODE HERE
-#endif
+	// V3
+	CgenEnvironment *env = new CgenEnvironment(*(cls->get_classtable()->ct_stream), cls);
+	std::vector<Type*> formals_type_vec;	// 形参类型
+	std::vector<std::string> param_name_vec;  // 形参名
+	// 收集形参的信息
+	for (int i = formals->first(); formals->more(i); i = formals->next(i)) {
+		formals_type_vec.push_back(cls->convert_symbol_to_type(formals->nth(i)->get_type_decl()));
+		param_name_vec.emplace_back(formals->nth(i)->get_name()->get_string());
+	}
+	Type *ret_type = cls->convert_symbol_to_type(return_type);
+	FunctionType *func_type = FunctionType::get(ret_type, formals_type_vec, false);
+	// func_name = class_method
+	std::string func_name = std::string(cls->get_name()->get_string()) + "_" + std::string(name->get_string());
+	Function *func = Function::Create(func_type, Function::ExternalLinkage, name->get_string(), xanxus_module.get());
+	cls->vtable_push_back(func);  // 将该方法记录到vtable_vec中
+
+	// 标注形参名
+	int arg_idx = 0;
+	for (auto &arg : func->args())
+		arg.setName(param_name_vec[arg_idx++]);
+
+	for (auto &arg : func->args())
+		env->add_local(arg.getName().str(), &arg);
+	// 生成method的代码
+	BasicBlock *entry_block = BasicBlock::Create(xanxus_context, "entry", func);
+	xanxus_builder.SetInsertPoint(entry_block);
+	expr->code(env);
+
 }
 
 // If the source tag is >= the branch tag and <= (max child of the branch class) tag,
@@ -1168,19 +1175,36 @@ Value* branch_class::code(operand expr_val, operand tag,
 // Assign this attribute a slot in the class structure
 void attr_class::layout_feature(CgenNode *cls)
 {
-#ifndef MP3
-	assert(0 && "Unsupported case for phase 1");
-#else
-	// ADD CODE HERE
-#endif
+	CgenEnvironment *env = new CgenEnvironment(*(cls->get_classtable()->ct_stream), cls);
+	cls->setup_attr_types(type_decl, cls);  // 收集attr的Type
 }
 
 void attr_class::code(CgenEnvironment *env)
 {
-#ifndef MP3
-	assert(0 && "Unsupported case for phase 1");
-#else
-	// ADD CODE HERE
-#endif
+	Value *init_val = init->code(env);
+	// AllocaInst* attr_var = xanxus_builder.CreateAlloca("")
 }
 
+// 收集attr的Type到attr_types中
+void CgenNode::setup_attr_types(Symbol type_decl, CgenNode *cls) {
+	std::string type_str(type_decl->get_string());
+
+	if (type_str == "Int")
+		cls->attr_types.push_back(Type::getInt32Ty(xanxus_context));
+	else if (type_str == "Bool")
+		cls->attr_types.push_back(Type::getInt1Ty(xanxus_context));
+//	else
+//		get new_type
+}
+
+// sym为Symbol类型的Type
+Type* CgenNode::convert_symbol_to_type(const Symbol& sym) {
+	std::string type_str(sym->get_string());
+
+	if (type_str == "Int")
+		return Type::getInt32Ty(xanxus_context);
+	else if (type_str == "Bool")
+		return Type::getInt1Ty(xanxus_context);
+	else
+		return types_map[type_str];
+}
