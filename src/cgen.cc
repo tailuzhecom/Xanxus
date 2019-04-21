@@ -656,6 +656,7 @@ CgenNode::CgenNode(Class_ nd, Basicness bstatus, CgenClassTable *ct)
   parentnd(0), children(0), basic_status(bstatus), class_table(ct), tag(-1)
 { 
 	// ADD CODE HERE
+	vtable_name = std::string(name->get_string()) + "_" + "vtable";
 }
 
 void CgenNode::add_child(CgenNode *n)
@@ -693,6 +694,10 @@ void CgenNode::setup(int tag, int depth)
 void CgenNode::layout_features()
 {
     if (cgen_debug) std::cerr << "CgenNode::layout_features" << endl;
+    class_type = StructType::create(xanxus_context, name->get_string());  // 先声明类型，收集完信息再填充
+    vtable_type = StructType::create(xanxus_context, vtable_name);
+    attr_types.push_back(vtable_type->getPointerTo());  // StructType的第一个元素为vtable的指针
+
 	// ADD CODE HERE
 	// 调用attr和method的layout_feature(CgenNode*)
 	for (int i = features->first(); features->more(i); i = features->next(i))
@@ -725,13 +730,22 @@ void CgenNode::code_class()
 	// 生成class的new函数　class* class_new()
 }
 
+// 根据vtable_vec创建StructType
 void CgenNode::create_vtable() {
-
+    StructType *vtable = xanxus_module->getTypeByName(vtable_name);
+    if (vtable)
+        vtable->setBody(vtable_vec);
+    else if(cgen_debug)
+        std::cerr << "vtable type doesn't exist" << endl;
 }
 
 // 根据attr_types创建StructType
 void CgenNode::create_struct_type() {
-    StructType::create(xanxus_context, attr_types, name->get_string());
+    StructType *type = xanxus_module->getTypeByName(name->get_string());
+    if (type)
+        type->setBody(attr_types);
+    else if(cgen_debug)
+        std::cerr << "struct type doesn't exist" << endl;
 }
 
 #ifndef MP3
@@ -847,9 +861,7 @@ void method_class::code(CgenEnvironment *env)
 	// 获取函数类型
 	// 定义函数
 	//处理形参，将形参加入到符号表中，注意有this*
-	// ADD CODE HERE
 	Function *func_ptr = xanxus_module->getFunction(util_create_method_name(name->get_string()));
-
 	BasicBlock *entry_block = BasicBlock::Create(xanxus_context, "entry", func_ptr);
 	xanxus_builder.SetInsertPoint(entry_block);
 	expr->code(env);
@@ -1180,6 +1192,9 @@ void method_class::layout_feature(CgenNode *cls)
 	// 收集形参的信息
     if (cgen_debug) std::cerr << "collect method info" << endl;
 
+    formals_type_vec.push_back(cls->get_class_type()->getPointerTo());  // 方法的首个参数为this指针
+    param_name_vec.push_back("this");
+
     for (int i = formals->first(); formals->more(i); i = formals->next(i)) {
 		formals_type_vec.push_back(cls->convert_symbol_to_type(formals->nth(i)->get_type_decl()));
 		param_name_vec.push_back(formals->nth(i)->get_name()->get_string());
@@ -1196,7 +1211,8 @@ void method_class::layout_feature(CgenNode *cls)
 	std::string func_name = cls->create_method_name(name->get_string());
 	Function *func = Function::Create(func_type, Function::ExternalLinkage, func_name, xanxus_module.get());
 	env->func_ptr = func;
-	cls->vtable_push_back(func);  // 将该方法记录到vtable_vec中
+	cls->vtable_vec_push_back(func_type);  // 将该方法记录到vtable_vec中
+	cls->vtable_constant_push_back(func);
 
     if (cgen_debug) std::cerr << "create name for param" << endl;
     // 标注形参名
@@ -1241,8 +1257,8 @@ void CgenNode::setup_attr_types(Symbol type_decl, CgenNode *cls) {
 		cls->attr_types.push_back(Type::getInt32Ty(xanxus_context));
 	else if (type_str == "Bool")
 		cls->attr_types.push_back(Type::getInt1Ty(xanxus_context));
-//	else
-//		get new_type
+    else if (xanxus_module->getTypeByName(type_str))
+        cls->attr_types.push_back(xanxus_module->getTypeByName(type_str));
 }
 
 // sym为Symbol类型的Type
