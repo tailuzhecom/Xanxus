@@ -148,6 +148,7 @@ void IntTable::code_string_table(ostream& s, CgenClassTable* ct)
 //
 void CgenClassTable::setup_external_functions()
 {
+    if (cgen_debug) std::cerr << "CgenClassTable::setup_external_functions" << endl;
 	ValuePrinter vp;
 	// setup function: external int strcmp(sbyte*, sbyte*)
 	op_type i32_type(INT32), i8ptr_type(INT8_PTR), vararg_type(VAR_ARG);
@@ -181,6 +182,7 @@ void CgenClassTable::setup_external_functions()
 // Creates AST nodes for the basic classes and installs them in the class list
 void CgenClassTable::install_basic_classes()
 {
+    if (cgen_debug) std::cerr << "CgenClassTable::install_basic_classes" << endl;
 	// The tree package uses these globals to annotate the classes built below.
 	curr_lineno = 0;
 	Symbol filename = stringtable.add_string("<basic class>");
@@ -329,6 +331,7 @@ void CgenClassTable::install_basic_classes()
 //
 void CgenClassTable::install_classes(Classes cs)
 {
+    if (cgen_debug) std::cerr << "CgenClassTable::install_classes" << endl;
 	for (int i = cs->first(); cs->more(i); i = cs->next(i)) {
 		install_class(new CgenNode(cs->nth(i),CgenNode::NotBasic,this));
 	}
@@ -339,9 +342,10 @@ void CgenClassTable::install_classes(Classes cs)
 // 
 void CgenClassTable::install_class(CgenNode *nd)
 {
+    if (cgen_debug) std::cerr << "CgenClassTable::install_class" << endl;
 	Symbol name = nd->get_name();
 
-	if (probe(name))
+	if (probe(name)) // 如果该class已经存在
 		return;
 
 	// The class name is legal, so add it to the list of classes
@@ -355,6 +359,7 @@ void CgenClassTable::install_class(CgenNode *nd)
 // 
 void CgenClassTable::install_special_class(CgenNode *nd)
 {
+    if (cgen_debug) std::cerr << "CgenClassTable::install_special_class" << endl;
 	Symbol name = nd->get_name();
 
 	if (probe(name))
@@ -371,6 +376,7 @@ void CgenClassTable::install_special_class(CgenNode *nd)
 //
 void CgenClassTable::build_inheritance_tree()
 {
+    if (cgen_debug) std::cerr << "CgenClassTable::build_inheritance_tree" << endl;
 	for(List<CgenNode> *l = nds; l; l = l->tl())
 		set_relations(l->hd());
 }
@@ -383,9 +389,10 @@ void CgenClassTable::build_inheritance_tree()
 //
 void CgenClassTable::set_relations(CgenNode *nd)
 {
+    if (cgen_debug) std::cerr << "CgenClassTable::set_relations" << endl;
 	CgenNode *parent_node = probe(nd->get_parent());
 	nd->set_parentnd(parent_node);
-	parent_node->add_child(nd);
+	parent_node->add_child(nd);　// 一个parent可能有多个children
 }
 
 // Get the root of the class tree.
@@ -452,7 +459,8 @@ CgenNode* CgenClassTable::getMainmain(CgenNode* c)
 //
 void CgenClassTable::code_constants()
 {
-
+    if (cgen_debug) std::cerr << "CgenClassTable::code_constants" << endl;
+    // 处理stringtable中的item，将item声明为global constant
 }
 
 // generate code to define a global string constant
@@ -512,22 +520,25 @@ CgenClassTable::~CgenClassTable()
 
 // The code generation first pass.  Define these two functions to traverse
 // the tree and setup each CgenNode
+// 遍历继承树，注意CgenClassTable和CgenNode都有setup函数
 void CgenClassTable::setup()
 {
+    if (cgen_debug) std::cerr << "CgenClassTable::setup" << endl;
 	setup_external_functions();
 	setup_classes(root(), 0);
 }
 
-
+// 设置current_tag和max_child
 void CgenClassTable::setup_classes(CgenNode *c, int depth)
 {
+    if (cgen_debug) std::cerr << "CgenClassTable::setup_classes" << endl;
 	// MAY ADD CODE HERE
 	// if you want to give classes more setup information
 
-	c->setup(current_tag++, depth);
+	c->setup(current_tag++, depth); // layout_feature在此调用
 	List<CgenNode> *children = c->get_children();
 	for (List<CgenNode> *child = children; child; child = child->tl())
-		setup_classes(child->hd(), depth + 1);
+		setup_classes(child->hd(), depth + 1);  // 遍历继承树
 	
 	c->set_max_child(current_tag-1);
 
@@ -544,6 +555,7 @@ void CgenClassTable::setup_classes(CgenNode *c, int depth)
 // emit code for each CgenNode
 void CgenClassTable::code_module()
 {
+    if (cgen_debug) std::cerr << "CgenClassTable::code_module" << endl;
 	code_constants();
 
 #ifndef MP3
@@ -561,12 +573,14 @@ void CgenClassTable::code_module()
 }
 
 
-
+// 遍历继承树，调用class的codegen()
 void CgenClassTable::code_classes(CgenNode *c)
 {
-
-	// ADD CODE HERE
-
+    if (cgen_debug) std::cerr << "CgenClassTable::code_classes" << endl;
+	c->code_class();    // class codegen()
+	List<CgenNode> *children = c->get_children();
+	for (List<CgenNode> *child = children; child; child = child->tl())
+	    code_classes(child->hd());
 }
 
 
@@ -665,6 +679,7 @@ void CgenNode::set_parentnd(CgenNode *p)
 //
 void CgenNode::setup(int tag, int depth)
 {
+    if (cgen_debug) std::cerr << "CgenNode::setup" << endl;
 	this->tag = tag;
 	this->layout_features();
 }
@@ -674,11 +689,14 @@ void CgenNode::setup(int tag, int depth)
 // and assigning each attribute a slot in the class structure.
 void CgenNode::layout_features()
 {
+    if (cgen_debug) std::cerr << "CgenNode::layout_features" << endl;
 	// ADD CODE HERE
 	// 调用attr和method的layout_feature(CgenNode*)
 	for (int i = features->first(); features->more(i); i = features->next(i))
 		features->nth(i)->layout_feature(this);
 
+	create_vtable();
+	create_struct_type();
 
 }
 
@@ -689,13 +707,28 @@ void CgenNode::layout_features()
 //
 void CgenNode::code_class()
 {
+    if (cgen_debug) std::cerr << "CgenNode::code_class" << endl;
 	// No code generation for basic classes. The runtime will handle that.
 	if (basic())
 		return;
 	
 	// ADD CODE HERE
+	CgenEnvironment *env = new CgenEnvironment(*(this->get_classtable()->ct_stream), this);
+	// 生成attr和method的部分代码，　layout_feature()是获取feature信息
+	for (int i = features->first(); features->more(i); i = features->next(i))
+	    features->nth(i)->code(env);
+
+	// 生成class的new函数　class* class_new()
 }
 
+void CgenNode::create_vtable() {
+
+}
+
+// 根据attr_types创建StructType
+void CgenNode::create_struct_type() {
+    StructType::create(xanxus_context, attr_types, name->get_string());
+}
 
 #ifndef MP3
 
@@ -807,8 +840,12 @@ void method_class::code(CgenEnvironment *env)
 {
 	if (cgen_debug) std::cerr << "method" << endl;
 
+	// 获取函数类型
+	// 定义函数
+	//处理形参，将形参加入到符号表中，注意有this*
 	// ADD CODE HERE
 	expr->code(env);
+
 }
 
 //
@@ -1129,33 +1166,35 @@ Value* isvoid_class::code(CgenEnvironment *env)
 // Create the LLVM Function corresponding to this method.
 void method_class::layout_feature(CgenNode *cls) 
 {
-	// V3
+    if (cgen_debug) std::cerr << "method_class::layout_feature" << endl;
 	CgenEnvironment *env = new CgenEnvironment(*(cls->get_classtable()->ct_stream), cls);
 	std::vector<Type*> formals_type_vec;	// 形参类型
 	std::vector<std::string> param_name_vec;  // 形参名
 	// 收集形参的信息
-	for (int i = formals->first(); formals->more(i); i = formals->next(i)) {
+    if (cgen_debug) std::cerr << "collect method info" << endl;
+
+    for (int i = formals->first(); formals->more(i); i = formals->next(i)) {
 		formals_type_vec.push_back(cls->convert_symbol_to_type(formals->nth(i)->get_type_decl()));
-		param_name_vec.emplace_back(formals->nth(i)->get_name()->get_string());
+		param_name_vec.push_back(formals->nth(i)->get_name()->get_string());
 	}
 	Type *ret_type = cls->convert_symbol_to_type(return_type);
-	FunctionType *func_type = FunctionType::get(ret_type, formals_type_vec, false);
+    if (cgen_debug && ret_type == nullptr) std::cerr << "ret_type is nullptr!" << endl;
+    if (cgen_debug) std::cerr << "param_num : " << param_name_vec.size() << endl;
+
+
+    if (cgen_debug) std::cerr << "get functiontype" << endl;
+
+    FunctionType *func_type = FunctionType::get(ret_type, formals_type_vec, false);
 	// func_name = class_method
 	std::string func_name = std::string(cls->get_name()->get_string()) + "_" + std::string(name->get_string());
 	Function *func = Function::Create(func_type, Function::ExternalLinkage, name->get_string(), xanxus_module.get());
 	cls->vtable_push_back(func);  // 将该方法记录到vtable_vec中
 
-	// 标注形参名
+    if (cgen_debug) std::cerr << "create name for param" << endl;
+    // 标注形参名
 	int arg_idx = 0;
 	for (auto &arg : func->args())
 		arg.setName(param_name_vec[arg_idx++]);
-
-	for (auto &arg : func->args())
-		env->add_local(arg.getName().str(), &arg);
-	// 生成method的代码
-	BasicBlock *entry_block = BasicBlock::Create(xanxus_context, "entry", func);
-	xanxus_builder.SetInsertPoint(entry_block);
-	expr->code(env);
 
 }
 
@@ -1175,6 +1214,7 @@ Value* branch_class::code(operand expr_val, operand tag,
 // Assign this attribute a slot in the class structure
 void attr_class::layout_feature(CgenNode *cls)
 {
+    if (cgen_debug) std::cerr << "attr_class::layout_feature" << endl;
 	CgenEnvironment *env = new CgenEnvironment(*(cls->get_classtable()->ct_stream), cls);
 	cls->setup_attr_types(type_decl, cls);  // 收集attr的Type
 }
@@ -1200,11 +1240,19 @@ void CgenNode::setup_attr_types(Symbol type_decl, CgenNode *cls) {
 // sym为Symbol类型的Type
 Type* CgenNode::convert_symbol_to_type(const Symbol& sym) {
 	std::string type_str(sym->get_string());
+    if (cgen_debug) std::cerr << "Type: " << type_str << endl;
 
-	if (type_str == "Int")
+    if (type_str == "Int")
 		return Type::getInt32Ty(xanxus_context);
 	else if (type_str == "Bool")
 		return Type::getInt1Ty(xanxus_context);
+	else if (type_str == "Object")
+	    return Type::getVoidTy(xanxus_context);     // TODO
+	else if (type_str == "String")
+	    return Type::getInt32Ty(xanxus_context)->getPointerTo(); // TODO
+	else if (type_str == "SELF_TYPE")
+	    return Type::getVoidTy(xanxus_context); // TODO
 	else
 		return types_map[type_str];
 }
+

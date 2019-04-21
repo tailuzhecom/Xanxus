@@ -166,7 +166,8 @@ public:
 	void setup_attr_types(Symbol type_decl, CgenNode *cls);
 	Type* convert_symbol_to_type(const Symbol& sym);
 	void vtable_push_back(Value *vtable_item) { vtable_vec.push_back(vtable_item); }
-
+	// 生成llvm中的方法名
+    std::string create_method_name(const std::string &method) { return std::string(name->get_string()) + "_" + method; }
 
 private:
 	// Layout the methods and attributes for code generation
@@ -174,6 +175,8 @@ private:
 	void layout_features();
 
 	// ADD CODE HERE
+	void create_vtable();
+	void create_struct_type();
 	vector<Type*> attr_types;  // used to construct class_type
 	vector<Value*> vtable_vec;  // used to construct vtable
 
