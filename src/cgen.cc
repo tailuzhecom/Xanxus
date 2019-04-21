@@ -266,7 +266,6 @@ void CgenClassTable::install_basic_classes()
 	install_class(new CgenNode(boolcls, CgenNode::Basic, this));
 	delete boolcls;
 
-#ifdef MP3
 //
 // The class String has a number of slots and operations:
 //       val                                  the string itself
@@ -296,7 +295,7 @@ void CgenClassTable::install_basic_classes()
 		       filename);
 	install_class(new CgenNode(stringcls, CgenNode::Basic, this));
 	delete stringcls;
-#endif
+
 
 #ifdef MP3
 // 
@@ -398,6 +397,7 @@ void CgenClassTable::set_relations(CgenNode *nd)
 // Get the root of the class tree.
 CgenNode *CgenClassTable::root()
 {
+    if (cgen_debug) std::cerr << "CgenClassTable::root" << std::endl;
 	return probe(Object);
 }
 
@@ -566,10 +566,9 @@ void CgenClassTable::code_module()
 #endif
 	code_main();
 
-#ifdef MP3
+
 	code_classes(root());
-#else
-#endif
+
 }
 
 
@@ -596,6 +595,7 @@ void CgenClassTable::code_main()
 	// Define an entry basic block
 
 	// Call Main_main(). This returns int for phase 1, Object for phase 2
+    if (cgen_debug) std::cerr << "CgenClassTable::code_main" << std::endl;
 
 	// No parameter
 	FunctionType *main_func_type = FunctionType::get(Type::getVoidTy(xanxus_context), std::vector<Type*>(), false);
@@ -614,8 +614,12 @@ void CgenClassTable::code_main()
 	// call puts function in main()
 	xanxus_builder.CreateCall(puts_func, hello_str);
 	Function *Main_main_func = xanxus_module->getFunction("Main_main");
-	xanxus_builder.CreateCall(Main_main_func);
+	if (Main_main_func)
+	    xanxus_builder.CreateCall(Main_main_func);
 	xanxus_builder.CreateRetVoid();
+
+    if (cgen_debug) std::cerr << "CgenClassTable::code_main return" << std::endl;
+
 
 #ifndef MP3
 	// Get the address of the string "Main_main() returned %d\n" using
