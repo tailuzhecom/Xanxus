@@ -41,6 +41,7 @@ llvm::LLVMContext xanxus_context;
 llvm::IRBuilder<> xanxus_builder(xanxus_context);
 std::unique_ptr<llvm::Module> xanxus_module = make_unique<Module>("Xanxus", xanxus_context);
 std::map<std::string, Type*> types_map; // 将所有声明的StructType类型都存储在这里
+std::string class_handling_str;
 
 class CgenClassTable : public cool::SymbolTable<Symbol,CgenNode> 
 {
@@ -206,8 +207,10 @@ private:
 	CgenNode *cur_class;
 
 
+
 public:
 	std::ostream *cur_stream;
+    Function *func_ptr;
 
 	// Used in provided code for the (case..of) construct
 	string next_label;
@@ -239,3 +242,4 @@ Value* conform(operand src, op_type dest_type, CgenEnvironment *env);
 // Retrieve the class tag from operand src. Argument is the cgen node for
 // the static class of src.
 Value* get_class_tag(operand src, CgenNode *src_cls, CgenEnvironment *env);
+std::string util_create_method_name(const std::string &method) { return class_handling_str + "_" + method; }

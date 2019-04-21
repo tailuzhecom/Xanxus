@@ -566,7 +566,6 @@ void CgenClassTable::code_module()
 #endif
 	code_main();
 
-
 	code_classes(root());
 
 }
@@ -712,6 +711,7 @@ void CgenNode::layout_features()
 void CgenNode::code_class()
 {
     if (cgen_debug) std::cerr << "CgenNode::code_class" << endl;
+    class_handling_str = name->get_string();
 	// No code generation for basic classes. The runtime will handle that.
 	if (basic())
 		return;
@@ -842,14 +842,17 @@ Value* get_class_tag(operand src, CgenNode *src_cls, CgenEnvironment *env) {
 // 
 void method_class::code(CgenEnvironment *env)
 {
-	if (cgen_debug) std::cerr << "method" << endl;
+	if (cgen_debug) std::cerr << "method_class::code" << endl;
 
 	// 获取函数类型
 	// 定义函数
 	//处理形参，将形参加入到符号表中，注意有this*
 	// ADD CODE HERE
-	expr->code(env);
+	Function *func_ptr = xanxus_module->getFunction(util_create_method_name(name->get_string()));
 
+	BasicBlock *entry_block = BasicBlock::Create(xanxus_context, "entry", func_ptr);
+	xanxus_builder.SetInsertPoint(entry_block);
+	expr->code(env);
 }
 
 //
@@ -1190,8 +1193,9 @@ void method_class::layout_feature(CgenNode *cls)
 
     FunctionType *func_type = FunctionType::get(ret_type, formals_type_vec, false);
 	// func_name = class_method
-	std::string func_name = std::string(cls->get_name()->get_string()) + "_" + std::string(name->get_string());
-	Function *func = Function::Create(func_type, Function::ExternalLinkage, name->get_string(), xanxus_module.get());
+	std::string func_name = cls->create_method_name(name->get_string());
+	Function *func = Function::Create(func_type, Function::ExternalLinkage, func_name, xanxus_module.get());
+	env->func_ptr = func;
 	cls->vtable_push_back(func);  // 将该方法记录到vtable_vec中
 
     if (cgen_debug) std::cerr << "create name for param" << endl;
