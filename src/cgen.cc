@@ -391,7 +391,7 @@ void CgenClassTable::set_relations(CgenNode *nd)
     if (cgen_debug) std::cerr << "CgenClassTable::set_relations" << endl;
 	CgenNode *parent_node = probe(nd->get_parent());
 	nd->set_parentnd(parent_node);
-	parent_node->add_child(nd);　// 一个parent可能有多个children
+	parent_node->add_child(nd); // 一个parent可能有多个children
 }
 
 // Get the root of the class tree.
@@ -515,7 +515,7 @@ CgenClassTable::CgenClassTable(Classes classes, ostream& s)
 
 CgenClassTable::~CgenClassTable()
 {
-	
+
 }
 
 // The code generation first pass.  Define these two functions to traverse
@@ -598,8 +598,8 @@ void CgenClassTable::code_main()
 
 	// No parameter
 	FunctionType *main_func_type = FunctionType::get(Type::getVoidTy(xanxus_context), std::vector<Type*>(), false);
-	Function *main = Function::Create(main_func_type, Function::ExternalLinkage, "main", xanxus_module.get());
-	BasicBlock *entry_block = BasicBlock::Create(xanxus_context, "entry", main);
+	Function *main_func = Function::Create(main_func_type, Function::ExternalLinkage, "main", xanxus_module.get());
+	BasicBlock *entry_block = BasicBlock::Create(xanxus_context, "entry", main_func);
 	xanxus_builder.SetInsertPoint(entry_block);
 
 	Value *hello_str = xanxus_builder.CreateGlobalStringPtr("hello world!\n");  // create string constant
@@ -613,10 +613,13 @@ void CgenClassTable::code_main()
 	// call puts function in main()
 	xanxus_builder.CreateCall(puts_func, hello_str);
 	Function *Main_main_func = xanxus_module->getFunction("Main_main");
-	if (Main_main_func)
-	    xanxus_builder.CreateCall(Main_main_func);
-	xanxus_builder.CreateRetVoid();
-
+	Type* main_type = xanxus_module->getTypeByName("Main");
+	AllocaInst *main_ptr = xanxus_builder.CreateAlloca(main_type);
+	if (main_ptr) {    // 如果已经定义Main class，则call Main_main()
+        if (Main_main_func)
+            xanxus_builder.CreateCall(Main_main_func, main_ptr);
+        xanxus_builder.CreateRetVoid();
+    }
     if (cgen_debug) std::cerr << "CgenClassTable::code_main return" << std::endl;
 
 
@@ -657,6 +660,7 @@ CgenNode::CgenNode(Class_ nd, Basicness bstatus, CgenClassTable *ct)
 { 
 	// ADD CODE HERE
 	vtable_name = std::string(name->get_string()) + "_" + "vtable";
+	ctor_name = std::string(name->get_string()) + "_ctor";
 }
 
 void CgenNode::add_child(CgenNode *n)
@@ -698,13 +702,13 @@ void CgenNode::layout_features()
     vtable_type = StructType::create(xanxus_context, vtable_name);
     attr_types.push_back(vtable_type->getPointerTo());  // StructType的第一个元素为vtable的指针
 
-	// ADD CODE HERE
 	// 调用attr和method的layout_feature(CgenNode*)
 	for (int i = features->first(); features->more(i); i = features->next(i))
 		features->nth(i)->layout_feature(this);
 
-	create_vtable();
-	create_struct_type();
+	create_vtable();    // 生成vtable type
+	create_struct_type();   // 生成class type
+    create_ctor();  // 生成默认构造函数
 
 }
 
@@ -732,6 +736,8 @@ void CgenNode::code_class()
 
 // 根据vtable_vec创建StructType
 void CgenNode::create_vtable() {
+    if(cgen_debug)
+        std::cerr << "CgenNode::create_vtable" << endl;
     StructType *vtable = xanxus_module->getTypeByName(vtable_name);
     if (vtable)
         vtable->setBody(vtable_vec);
@@ -741,11 +747,41 @@ void CgenNode::create_vtable() {
 
 // 根据attr_types创建StructType
 void CgenNode::create_struct_type() {
+    if(cgen_debug)
+        std::cerr << "CgenNode::create_struct_type" << endl;
     StructType *type = xanxus_module->getTypeByName(name->get_string());
     if (type)
         type->setBody(attr_types);
     else if(cgen_debug)
         std::cerr << "struct type doesn't exist" << endl;
+}
+
+// 创建class的默认构造函数
+void CgenNode::create_ctor() {
+    if(cgen_debug)
+        std::cerr << "CgenNode::create_ctor" << endl;
+    FunctionType *ctor_type = FunctionType::get(Type::getVoidTy(xanxus_context), {class_type->getPointerTo()}, false);
+    Function *ctor_func = Function::Create(ctor_type, Function::ExternalLinkage, ctor_name, xanxus_module.get());
+    BasicBlock *entry_block = BasicBlock::Create(xanxus_context, "entry", ctor_func);
+    xanxus_builder.SetInsertPoint(entry_block);
+    Value *this_ptr = nullptr;
+    for (auto &arg : ctor_func->args()) {
+        arg.setName("this");
+        this_ptr = &arg;
+    }
+
+    // 初始化vtable
+    Constant *vtable_const = ConstantStruct::get(vtable_type, vtable_constants);
+    std::vector<Value*> gep_list({util_get_int32(0), util_get_int32(0)});
+    Value *vtable_ptr_2 = xanxus_builder.CreateGEP(this_ptr, gep_list);  // %vtable** = getelementptr %this, 0, 0
+    Value *vtable_ptr= xanxus_builder.CreateLoad(vtable_ptr_2); // %vtable* = load %vtable**
+    xanxus_builder.CreateStore(vtable_const, vtable_ptr);   // store vtable_const, %vtable*
+
+    //TODO 初始化成员变量值
+
+
+    // 返回
+    xanxus_builder.CreateRetVoid();
 }
 
 #ifndef MP3
@@ -864,7 +900,19 @@ void method_class::code(CgenEnvironment *env)
 	Function *func_ptr = xanxus_module->getFunction(util_create_method_name(name->get_string()));
 	BasicBlock *entry_block = BasicBlock::Create(xanxus_context, "entry", func_ptr);
 	xanxus_builder.SetInsertPoint(entry_block);
-	expr->code(env);
+	Value *res = expr->code(env);
+
+	// 处理函数返回值
+	if (res)
+	    xanxus_builder.CreateRet(res);
+	else {
+	    if (func_ptr->getReturnType() == Type::getInt32Ty(xanxus_context))
+	        xanxus_builder.CreateRet(util_get_int32(0));
+	    else if (func_ptr->getReturnType() == Type::getInt1Ty(xanxus_context))
+            xanxus_builder.CreateRet(util_get_int1(0));
+	    else if (func_ptr->getReturnType() == Type::getVoidTy(xanxus_context))
+	        xanxus_builder.CreateRetVoid();
+	}
 }
 
 //
@@ -1211,7 +1259,7 @@ void method_class::layout_feature(CgenNode *cls)
 	std::string func_name = cls->create_method_name(name->get_string());
 	Function *func = Function::Create(func_type, Function::ExternalLinkage, func_name, xanxus_module.get());
 	env->func_ptr = func;
-	cls->vtable_vec_push_back(func_type);  // 将该方法记录到vtable_vec中
+	cls->vtable_vec_push_back(func_type->getPointerTo());  // 将该方法类型的指针记录到vtable_vec中
 	cls->vtable_constant_push_back(func);
 
     if (cgen_debug) std::cerr << "create name for param" << endl;

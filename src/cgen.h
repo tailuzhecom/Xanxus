@@ -167,7 +167,7 @@ public:
 	void setup_attr_types(Symbol type_decl, CgenNode *cls);
 	Type* convert_symbol_to_type(const Symbol& sym);
 	void vtable_vec_push_back(Type *vtable_item) { vtable_vec.push_back(vtable_item); }
-	void vtable_constant_push_back(Value *item) { vtable_constants.push_back(item); }
+	void vtable_constant_push_back(Constant *item) { vtable_constants.push_back(item); }
 	// 生成llvm中的方法名
     std::string create_method_name(const std::string &method) { return std::string(name->get_string()) + "_" + method; }
     StructType* get_class_type() { return class_type; }
@@ -181,13 +181,15 @@ private:
 	// ADD CODE HERE
 	void create_vtable();
 	void create_struct_type();
-    std::string vtable_name;    // llvm vtable type name
+	void create_ctor();
+    std::string vtable_name;    // llvm vtable type name : class_vtable
+    std::string ctor_name;      // llvm ctor name : class_ctor
     StructType *class_type;
     StructType *vtable_type;
 
 	vector<Type*> attr_types;  // used to construct class_type
 	vector<Type*> vtable_vec;  // used to construct vtable type
-	vector<Value*> vtable_constants; // 方法指针
+	vector<Constant*> vtable_constants; // 方法指针
 
 };
 
@@ -251,3 +253,5 @@ Value* conform(operand src, op_type dest_type, CgenEnvironment *env);
 // the static class of src.
 Value* get_class_tag(operand src, CgenNode *src_cls, CgenEnvironment *env);
 std::string util_create_method_name(const std::string &method) { return class_handling_str + "_" + method; }
+Constant* util_get_int32(const uint64_t &i) { return ConstantInt::get(Type::getInt32Ty(xanxus_context), APInt(32, i)); }
+Constant* util_get_int1(const uint64_t &i) { return ConstantInt::get(Type::getInt32Ty(xanxus_context), APInt(1, i)); }
