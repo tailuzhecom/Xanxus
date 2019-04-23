@@ -74,7 +74,7 @@ private:
     
 	// Create declarations for C runtime functions we need to generate code
 	void setup_external_functions();
-	void setup_classes(CgenNode *c, int depth);
+	void setup_classes(CgenNode *c, int depth, std::vector<std::string> attr_array, std::vector<Type*> type_array);
 
 
 	void code_classes(CgenNode *c);
@@ -155,7 +155,7 @@ public:
 	virtual ~CgenNode() { }
 
 	// Class setup. You need to write the body of this function.
-	void setup(int tag, int depth);
+	void setup(int tag, int depth, std::vector<std::string> &attr_array, std::vector<Type*> &type_array);
 
 	// Class codegen. You need to write the body of this function.
 	void code_class();

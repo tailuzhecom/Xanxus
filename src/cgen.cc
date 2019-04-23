@@ -227,18 +227,20 @@ void CgenClassTable::install_basic_classes()
 	// There is no need for method bodies in the basic classes---these
 	// are already built in to the runtime system.
 	//
+	// TODO 为了生成程序的可运行性，目前禁用了一些basic　class的install
 	// Object class
 	Class_ objcls =
 		class_(Object, 
 		       No_class,
-		       append_Features(
-		       append_Features(
-		       single_Features(method(cool_abort, nil_Formals(), 
-		                              Object, no_expr())),
-		       single_Features(method(type_name, nil_Formals(),
-		                              String, no_expr()))),
-		       single_Features(method(cool_copy, nil_Formals(), 
-		                              SELF_TYPE, no_expr()))),
+//		       append_Features(
+//		       append_Features(
+//		       single_Features(method(cool_abort, nil_Formals(),
+//		                              Object, no_expr())),
+//		       single_Features(method(type_name, nil_Formals(),
+//		                              String, no_expr()))),
+//		       single_Features(method(cool_copy, nil_Formals(),
+//		                              SELF_TYPE, no_expr()))),
+				nil_Features(),
 		       filename);
 	install_class(new CgenNode(objcls, CgenNode::Basic, this));
 	delete objcls;
@@ -252,7 +254,7 @@ void CgenClassTable::install_basic_classes()
 		       Object,
 		       single_Features(attr(val, prim_int, no_expr())),
 		       filename);
-	install_class(new CgenNode(intcls, CgenNode::Basic, this));
+	//install_class(new CgenNode(intcls, CgenNode::Basic, this));
 	delete intcls;
 
 //
@@ -263,7 +265,7 @@ void CgenClassTable::install_basic_classes()
 		       Object, 
 		       single_Features(attr(val, prim_bool, no_expr())),
 		       filename);
-	install_class(new CgenNode(boolcls, CgenNode::Basic, this));
+	//install_class(new CgenNode(boolcls, CgenNode::Basic, this));
 	delete boolcls;
 
 //
@@ -293,7 +295,7 @@ void CgenClassTable::install_basic_classes()
 		                              String, 
 		                              no_expr()))),
 		       filename);
-	install_class(new CgenNode(stringcls, CgenNode::Basic, this));
+	//install_class(new CgenNode(stringcls, CgenNode::Basic, this));
 	delete stringcls;
 
 
@@ -320,7 +322,7 @@ void CgenClassTable::install_basic_classes()
 		                              no_expr()))),
 		       single_Features(method(in_int, nil_Formals(), Int, no_expr()))),
 		       filename);
-	install_class(new CgenNode(iocls, CgenNode::Basic, this));
+	//install_class(new CgenNode(iocls, CgenNode::Basic, this));
 	delete iocls;
 #endif
 }
@@ -525,20 +527,23 @@ void CgenClassTable::setup()
 {
     if (cgen_debug) std::cerr << "CgenClassTable::setup" << endl;
 	setup_external_functions();
-	setup_classes(root(), 0);
+	setup_classes(root(), 0, std::vector<std::string>(), std::vector<Type*>());
 }
 
-// 设置current_tag和max_child
-void CgenClassTable::setup_classes(CgenNode *c, int depth)
+// 设置current_tag和max_child，attr_array和type_array用于收集继承的属性
+void CgenClassTable::setup_classes(CgenNode *c, int depth, std::vector<std::string> attr_array, std::vector<Type*> type_array)
 {
     if (cgen_debug) std::cerr << "CgenClassTable::setup_classes" << endl;
 	// MAY ADD CODE HERE
 	// if you want to give classes more setup information
 
-	c->setup(current_tag++, depth); // layout_feature在此调用
+	c->setup(current_tag++, depth, attr_array, type_array); // layout_feature在此调用,收集attr信息
+
+	std::vector<std::string> attr_array_collection(attr_array);
+	std::vector<Type*> type_array_collection(type_array);
 	List<CgenNode> *children = c->get_children();
 	for (List<CgenNode> *child = children; child; child = child->tl())
-		setup_classes(child->hd(), depth + 1);  // 遍历继承树
+		setup_classes(child->hd(), depth + 1, attr_array_collection, type_array_collection);  // 遍历继承树
 	
 	c->set_max_child(current_tag-1);
 
@@ -638,8 +643,6 @@ void CgenClassTable::code_main()
 	// and the return value of Main_main() as its arguments
 
 	// Insert return 0
-	
-
 #else
 	// Phase 2
 #endif
@@ -685,11 +688,21 @@ void CgenNode::set_parentnd(CgenNode *p)
 //  - create the types for the class and its vtable
 //  - create global definitions used by the class such as the class vtable
 //
-void CgenNode::setup(int tag, int depth)
+void CgenNode::setup(int tag, int depth, std::vector<std::string> &attr_array, std::vector<Type*> &type_array)
 {
     if (cgen_debug) std::cerr << "CgenNode::setup" << endl;
 	this->tag = tag;
+	attr_name_array = attr_array;  // attr继承，将父类的attr赋给子类
+	attr_types = type_array;
 	this->layout_features();
+	attr_array = attr_name_array;  // 通过layout_feature()收集到子类的attr
+	type_array = attr_types; // 返回的type_array中没有%vtable*
+
+	attr_types.insert(attr_types.begin(), vtable_type->getPointerTo());  // StructType的第一个元素为vtable的指针
+	//std::cerr << std::string(name->get_string()) << "type nums: : " << attr_types.size() << std::endl;
+	create_vtable();    // 生成vtable type
+	create_struct_type();   // 生成class type
+	create_ctor();  // 生成默认构造函数
 }
 
 // V3
@@ -700,16 +713,10 @@ void CgenNode::layout_features()
     if (cgen_debug) std::cerr << "CgenNode::layout_features" << endl;
     class_type = StructType::create(xanxus_context, name->get_string());  // 先声明类型，收集完信息再填充
     vtable_type = StructType::create(xanxus_context, vtable_name);
-    attr_types.push_back(vtable_type->getPointerTo());  // StructType的第一个元素为vtable的指针
 
 	// 调用attr和method的layout_feature(CgenNode*)
 	for (int i = features->first(); features->more(i); i = features->next(i))
 		features->nth(i)->layout_feature(this);
-
-	create_vtable();    // 生成vtable type
-	create_struct_type();   // 生成class type
-    create_ctor();  // 生成默认构造函数
-
 }
 
 
@@ -758,7 +765,7 @@ void CgenNode::create_struct_type() {
         type->setBody(attr_types);
     else if(cgen_debug)
         std::cerr << "struct type doesn't exist" << endl;
-}void symboltable_clear();
+}
 
 // 创建class的默认构造函数
 void CgenNode::create_ctor() {
@@ -910,7 +917,6 @@ Value* get_class_tag(operand src, CgenNode *src_cls, CgenEnvironment *env) {
 // 
 void method_class::code(CgenEnvironment *env)
 {
-
 	if (cgen_debug) std::cerr << "method_class::code" << endl;
 
 	// 获取函数类型
@@ -1204,12 +1210,31 @@ Value* no_expr_class::code(CgenEnvironment *env)
 // but these functions must be defined because they are declared as
 // methods via the Expression_SHARED_EXTRAS hack.
 //*****************************************************************
-
+// expr@class.method()
 Value* static_dispatch_class::code(CgenEnvironment *env)
 { 
 	if (cgen_debug) std::cerr << "static dispatch" << endl;
+	std::string call_method_name = std::string(type_name->get_string())  + "_"  + std::string(name->get_string());
+	Value *call_ptr = expr->code(env);
+	std::vector<Value*> args;
+	StructType *static_type = xanxus_module->getTypeByName(type_name->get_string());
+	Value *bitcast_ptr = nullptr;
+	Function *func = nullptr;
+	if (static_type) {    // 如果该类型存在
+		func = xanxus_module->getFunction(call_method_name);
+		if (!func) {	// 所调用的函数不存在
+			std::cerr << "Error: This function doesn't exist." << std::endl;
+			return nullptr;
+		}
+		bitcast_ptr = xanxus_builder.CreateBitCast(call_ptr, static_type->getPointerTo());	// 转换成适合的指针
+	}
+	args.push_back(bitcast_ptr);  //　传入this指针
+	for (int i = actual->first(); actual->more(i); i = actual->more(i))
+		args.push_back(actual->nth(i)->code(env));
 
-	return nullptr;
+	Value *res = xanxus_builder.CreateCall(func, args);
+
+	return res;
 }
 
 Value* string_const_class::code(CgenEnvironment *env)
