@@ -259,6 +259,7 @@ public:
 	void add_local(std::string name, Value *vb);
 	void kill_local();
 	void enterscope() { var_table.enterscope(); }
+	void exitscope() { var_table.exitscope(); }
 	void symboltable_clear(); // 清空var_table
 	// end of helpers for provided code
 

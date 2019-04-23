@@ -982,12 +982,18 @@ Value* cond_class::code(CgenEnvironment *env)
 
     // true chain
     xanxus_builder.SetInsertPoint(then_block);
+
+    env->enterscope();
     Value *then_res = then_exp->code(env);
+    env->exitscope();
+
     xanxus_builder.CreateBr(merge_block);
 
     // false chain
     xanxus_builder.SetInsertPoint(else_block);
+    env->enterscope();
     Value *else_res = else_exp->code(env);
+    env->exitscope();
     xanxus_builder.CreateBr(merge_block);
 
     xanxus_builder.SetInsertPoint(merge_block);
@@ -1019,7 +1025,11 @@ Value* loop_class::code(CgenEnvironment *env)
 
 	// while body
 	xanxus_builder.SetInsertPoint(body_block);
+
+	env->enterscope();
 	body->code(env);
+	env->exitscope();
+
 	xanxus_builder.CreateBr(cond_block);
 
 	// end body
@@ -1031,20 +1041,20 @@ Value* loop_class::code(CgenEnvironment *env)
 Value* block_class::code(CgenEnvironment *env)
 { 
 	if (cgen_debug) std::cerr << "block" << endl;
-	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
-	// MORE MEANINGFUL
+
 	Value *block_res = nullptr;
+	env->enterscope();
 	for (int i = body->first(); body->more(i); i = body->next(i))
 	    block_res = body->nth(i)->code(env);
-
+	env->exitscope();
 	return block_res;
 }
 
 Value* let_class::code(CgenEnvironment *env)
 { 
 	if (cgen_debug) std::cerr << "let" << endl;
-	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
-	// MORE MEANINGFUL
+
+	env->enterscope();
 	AllocaInst *param = nullptr;
 	std::string type_str(type_decl->get_string());
 
@@ -1069,7 +1079,9 @@ Value* let_class::code(CgenEnvironment *env)
 	}
 
 	// return the result of body
-	return body->code(env);
+	Value *res = body->code(env);
+	env->exitscope();
+	return res;
 }
 
 Value* plus_class::code(CgenEnvironment *env)
@@ -1175,7 +1187,8 @@ Value* object_class::code(CgenEnvironment *env)
 	if (cgen_debug) std::cerr << "Object" << endl;
 	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
 	// MORE MEANINGFUL
-	return nullptr;
+	Value * res = env->lookup(name->get_string());
+	return res;
 }
 
 Value* no_expr_class::code(CgenEnvironment *env)
@@ -1195,12 +1208,7 @@ Value* no_expr_class::code(CgenEnvironment *env)
 Value* static_dispatch_class::code(CgenEnvironment *env)
 { 
 	if (cgen_debug) std::cerr << "static dispatch" << endl;
-#ifndef MP3
-	assert(0 && "Unsupported case for phase 1");
-#else
-	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
-	// MORE MEANINGFUL
-#endif
+    
 	return nullptr;
 }
 
