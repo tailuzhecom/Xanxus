@@ -279,6 +279,7 @@ public:
 	void get_attr_array(const std::vector<std::string> &attrs) { attr_array = attrs; }
 	void update_attr();
 	void set_this_ptr(Value *p) { this_ptr = p; }
+	Value* get_this_ptr() { return this_ptr; }
 	
 };
 

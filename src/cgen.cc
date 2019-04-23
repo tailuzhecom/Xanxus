@@ -1208,7 +1208,7 @@ Value* no_expr_class::code(CgenEnvironment *env)
 Value* static_dispatch_class::code(CgenEnvironment *env)
 { 
 	if (cgen_debug) std::cerr << "static dispatch" << endl;
-    
+
 	return nullptr;
 }
 
@@ -1227,13 +1227,16 @@ Value* string_const_class::code(CgenEnvironment *env)
 Value* dispatch_class::code(CgenEnvironment *env)
 {
 	if (cgen_debug) std::cerr << "dispatch" << endl;
-#ifndef MP3
-	assert(0 && "Unsupported case for phase 1");
-#else
-	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
-	// MORE MEANINGFUL
-#endif
-	return nullptr;
+	// 调用成员函数
+	std::string call_method_name = std::string(env->get_class()->get_name()->get_string())  + "_"  + std::string(name->get_string());
+	Function *func = xanxus_module->getFunction(call_method_name);
+	std::vector<Value*> args;
+	args.push_back(env->get_this_ptr());  //　传入this指针
+	for (int i = actual->first(); actual->more(i); i = actual->more(i))
+		args.push_back(actual->nth(i)->code(env));
+
+	Value *res = xanxus_builder.CreateCall(func, args);
+	return res;
 }
 
 Value* typcase_class::code(CgenEnvironment *env)
