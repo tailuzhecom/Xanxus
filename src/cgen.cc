@@ -725,11 +725,15 @@ void CgenNode::code_class()
 	if (basic())
 		return;
 	
-	// ADD CODE HERE
 	CgenEnvironment *env = new CgenEnvironment(*(this->get_classtable()->ct_stream), this);
+
+
 	// 生成attr和method的部分代码，　layout_feature()是获取feature信息
-	for (int i = features->first(); features->more(i); i = features->next(i))
-	    features->nth(i)->code(env);
+	for (int i = features->first(); features->more(i); i = features->next(i)) {
+        env->symboltable_clear();
+		env->get_attr_array(attr_name_array);
+        features->nth(i)->code(env);
+    }
 
 	// 生成class的new函数　class* class_new()
 }
@@ -754,7 +758,7 @@ void CgenNode::create_struct_type() {
         type->setBody(attr_types);
     else if(cgen_debug)
         std::cerr << "struct type doesn't exist" << endl;
-}
+}void symboltable_clear();
 
 // 创建class的默认构造函数
 void CgenNode::create_ctor() {
@@ -839,15 +843,29 @@ CgenNode *CgenEnvironment::type_to_class(Symbol t) {
 
 
 void CgenEnvironment::add_local(std::string name, Value *vb) {
-	var_table.enterscope();
 	var_table.addid(name, vb);
-
 }
 
 void CgenEnvironment::kill_local() {
 	var_table.exitscope();
 }
 
+// 重置符号表
+void CgenEnvironment::symboltable_clear() {
+    var_table.clear();
+    var_table.enterscope();
+}
+
+// 将成员变量加入符号表
+void CgenEnvironment::update_attr() {
+	for (int i = 0; i < attr_array.size(); i++) {
+		std::vector<Value*> gep_array({util_get_int32(0), util_get_int32(i + 1)});  // 因为第一位是vtable，所以偏移量要+1
+		if (cgen_debug) std::cerr << "update_attr : CreateGEP start" << endl;
+		add_local(attr_array[i], xanxus_builder.CreateGEP(this_ptr, gep_array));
+		if (cgen_debug) std::cerr << "update_attr : CreateGEP finish" << endl;
+	}
+
+}
 
 ////////////////////////////////////////////////////////////////////////////
 //
@@ -892,15 +910,32 @@ Value* get_class_tag(operand src, CgenNode *src_cls, CgenEnvironment *env) {
 // 
 void method_class::code(CgenEnvironment *env)
 {
+
 	if (cgen_debug) std::cerr << "method_class::code" << endl;
 
 	// 获取函数类型
 	// 定义函数
+	// 将成员变量加入到符号表
 	//处理形参，将形参加入到符号表中，注意有this*
 	Function *func_ptr = xanxus_module->getFunction(util_create_method_name(name->get_string()));
+
+	// 获取第一个arg
+	for (auto &arg : func_ptr->args()) {
+		env->set_this_ptr(&arg);
+		break;
+	}
+
 	BasicBlock *entry_block = BasicBlock::Create(xanxus_context, "entry", func_ptr);
 	xanxus_builder.SetInsertPoint(entry_block);
+	// 初始化成员变量
+	env->update_attr();
+	// 初始化函数参数
+	for (auto &arg : func_ptr->args())
+		env->add_local(arg.getName().str(), &arg);
+	// function body codegen()
 	Value *res = expr->code(env);
+
+    if (cgen_debug) std::cerr << "expr codegen() finish" << endl;
 
 	// 处理函数返回值
 	if (res)
@@ -1289,6 +1324,8 @@ void attr_class::layout_feature(CgenNode *cls)
     if (cgen_debug) std::cerr << "attr_class::layout_feature" << endl;
 	CgenEnvironment *env = new CgenEnvironment(*(cls->get_classtable()->ct_stream), cls);
 	cls->setup_attr_types(type_decl, cls);  // 收集attr的Type
+	cls->name_array_push_back(name->get_string()); // 记录attr的偏移量
+
 }
 
 void attr_class::code(CgenEnvironment *env)

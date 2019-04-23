@@ -22,9 +22,12 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Constants.h"
 #include <memory>
 #include <vector>
 #include <map>
+#include <deque>
 #include "llvm/Support/raw_os_ostream.h"
 
 //
@@ -128,10 +131,6 @@ private:
 	int tag;
 	int max_child;
 
-
-	// ADD CODE HERE
-
-
 public:
 	// COMPLETE FUNCTIONS
 
@@ -172,6 +171,7 @@ public:
     std::string create_method_name(const std::string &method) { return std::string(name->get_string()) + "_" + method; }
     StructType* get_class_type() { return class_type; }
     StructType* get_vtable_type() { return vtable_type; }
+    void name_array_push_back(const std::string &attr_name) { attr_name_array.push_back(attr_name); }
 
 private:
 	// Layout the methods and attributes for code generation
@@ -190,6 +190,7 @@ private:
 	vector<Type*> attr_types;  // used to construct class_type
 	vector<Type*> vtable_vec;  // used to construct vtable type
 	vector<Constant*> vtable_constants; // 方法指针
+	std::vector<std::string> attr_name_array;  // 记录成员变量名在struct type中的index，从０开始
 
 };
 
@@ -201,13 +202,42 @@ private:
 // to put non-local information you will need during code generation.  Two
 // examples are the current CgenNode and the current Function.
 //
+class MethodSymboTable {
+public:
+	void enterscope() { table.push_back(std::map<std::string, Value*>()); }
+	void exitscope() { table.erase(table.end() - 1); }
+	void addid(const std::string &name, Value* val) {
+		table[table.size() - 1][name] = val;
+	}
+	Value* lookup(const std::string &name) {
+		for (int i = table.size() - 1; i >= 0 ; i--) {
+			auto res = table[i][name];
+			if (res)
+				return res;
+		}
+		return nullptr;
+	}
+
+	Value* probe(const std::string &name) {
+		auto res = table[table.size() - 1][name];
+		if (res)
+			return res;
+		return nullptr;
+	}
+
+	void clear() { table.clear(); }
+
+private:
+	std::vector<std::map<std::string, Value*> > table;
+};
+
 class CgenEnvironment
 {
 
 private:
 	// mapping from variable names to memory locations
-	cool::SymbolTable<std::string,Value> var_table;
-
+	//cool::SymbolTable<std::string,Value> var_table;
+	MethodSymboTable var_table;
 	// Keep counters for unique name generation in the current method
 	int block_count;
 	int tmp_count;
@@ -215,24 +245,27 @@ private:
 
 	// ADD CODE HERE
 	CgenNode *cur_class;
-
+    std::vector<std::string> attr_array;
 
 
 public:
 	std::ostream *cur_stream;
-    Function *func_ptr;
+    Function *func_ptr; // 当前处理的函数
+    Value *this_ptr;    // 函数中的this指针
 
 	// Used in provided code for the (case..of) construct
 	string next_label;
 	operand branch_operand;    
 	void add_local(std::string name, Value *vb);
 	void kill_local();
+	void enterscope() { var_table.enterscope(); }
+	void symboltable_clear(); // 清空var_table
 	// end of helpers for provided code
 
 	CgenEnvironment(ostream &stream, CgenNode *cur_class);
 
 
-	Value* lookup(std::string name)	{ return var_table.lookup(name); }
+	Value* lookup(const std::string &name)	{ return var_table.lookup(name); }
     
 	CgenNode *get_class() { return cur_class; }
 	void set_class(CgenNode *c) { cur_class = c; }
@@ -242,6 +275,9 @@ public:
 	// Must return the CgenNode for a class given the symbol of its name
 	CgenNode *type_to_class(Symbol t);
 	// ADD CODE HERE
+	void get_attr_array(const std::vector<std::string> &attrs) { attr_array = attrs; }
+	void update_attr();
+	void set_this_ptr(Value *p) { this_ptr = p; }
 	
 };
 
