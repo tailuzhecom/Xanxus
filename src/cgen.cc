@@ -936,8 +936,21 @@ void method_class::code(CgenEnvironment *env)
 	// 初始化成员变量
 	env->update_attr();
 	// 初始化函数参数
-	for (auto &arg : func_ptr->args())
-		env->add_local(arg.getName().str(), &arg);
+
+
+	int arg_idx = 0;
+	for (auto &arg : func_ptr->args()) {
+	    if (arg_idx++ == 0)  // 跳过this
+            continue;
+
+        // 创建局部变量
+        AllocaInst *arg_ptr = xanxus_builder.CreateAlloca(arg.getType());
+        //　将传入的参数值赋给变量
+        xanxus_builder.CreateStore(&arg, arg_ptr);
+        env->add_local(arg.getName().str(), arg_ptr);
+
+	}
+
 	// function body codegen()
 	Value *res = expr->code(env);
 
@@ -1193,7 +1206,8 @@ Value* object_class::code(CgenEnvironment *env)
 	if (cgen_debug) std::cerr << "Object" << endl;
 	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
 	// MORE MEANINGFUL
-	Value * res = env->lookup(name->get_string());
+	Value *obj_ptr = env->lookup(name->get_string());
+	Value *res = xanxus_builder.CreateLoad(obj_ptr);
 	return res;
 }
 
@@ -1388,7 +1402,7 @@ void CgenNode::setup_attr_types(Symbol type_decl, CgenNode *cls) {
 	else if (type_str == "Bool")
 		cls->attr_types.push_back(Type::getInt1Ty(xanxus_context));
     else if (xanxus_module->getTypeByName(type_str))
-        cls->attr_types.push_back(xanxus_module->getTypeByName(type_str));
+        cls->attr_types.push_back(xanxus_module->getTypeByName(type_str)->getPointerTo());
 }
 
 // sym为Symbol类型的Type
