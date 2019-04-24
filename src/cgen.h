@@ -293,3 +293,4 @@ Value* get_class_tag(operand src, CgenNode *src_cls, CgenEnvironment *env);
 std::string util_create_method_name(const std::string &method) { return class_handling_str + "_" + method; }
 Constant* util_get_int32(const uint64_t &i) { return ConstantInt::get(Type::getInt32Ty(xanxus_context), APInt(32, i)); }
 Constant* util_get_int1(const uint64_t &i) { return ConstantInt::get(Type::getInt32Ty(xanxus_context), APInt(1, i)); }
+Function *util_get_builtin_func(const std::string &name);

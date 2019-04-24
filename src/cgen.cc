@@ -158,11 +158,11 @@ void CgenClassTable::setup_external_functions()
 	vp.declare(*ct_stream, i32_type, "strcmp", strcmp_args); 
 
 	// setup function: external int printf(sbyte*, ...)
-	vector<op_type> printf_args;
-	printf_args.push_back(i8ptr_type);
-	printf_args.push_back(vararg_type);
-	vp.declare(*ct_stream, i32_type, "printf", printf_args);
-
+	llvm::FunctionType *print_type = llvm::FunctionType::get(
+			llvm::Type::getInt32Ty(xanxus_context),
+			{llvm::Type::getInt8PtrTy(xanxus_context)},
+			true);
+	llvm::Function::Create(print_type, llvm::GlobalValue::ExternalLinkage, "printf", xanxus_module.get());
 	// setup function: external void abort(void)
 	op_type void_type(VOID);
 	vector<op_type> abort_args;
@@ -1240,19 +1240,28 @@ Value* static_dispatch_class::code(CgenEnvironment *env)
 Value* string_const_class::code(CgenEnvironment *env)
 {
 	if (cgen_debug) std::cerr << "string_const" << endl;
-#ifndef MP3
-	assert(0 && "Unsupported case for phase 1");
-#else
-	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
-	// MORE MEANINGFUL
-#endif
-	return nullptr;
+
+	return xanxus_builder.CreateGlobalStringPtr(token->get_string());
 }
 
 Value* dispatch_class::code(CgenEnvironment *env)
 {
 	if (cgen_debug) std::cerr << "dispatch" << endl;
-	// 调用成员函数
+	// call builtin
+	Function *builtin_func = util_get_builtin_func(name->get_string());
+	if (builtin_func) {
+		std::string builtin_name(name->get_string());
+		if (builtin_name == "printlnInt")
+			return xanxus_builder.CreateCall(builtin_func, {xanxus_builder.CreateGlobalStringPtr("%d\n"), actual->nth(0)->code(env)});
+		else if (builtin_name == "printInt")
+            return xanxus_builder.CreateCall(builtin_func, {xanxus_builder.CreateGlobalStringPtr("%d"), actual->nth(0)->code(env)});
+        else if (builtin_name == "printlnStr")
+            return xanxus_builder.CreateCall(builtin_func, {xanxus_builder.CreateGlobalStringPtr("%s\n"), actual->nth(0)->code(env)});
+        else if (builtin_name == "printStr")
+            return xanxus_builder.CreateCall(builtin_func, {xanxus_builder.CreateGlobalStringPtr("%s"), actual->nth(0)->code(env)});
+	}
+
+	// call member function
 	std::string call_method_name = std::string(env->get_class()->get_name()->get_string())  + "_"  + std::string(name->get_string());
 	Function *func = xanxus_module->getFunction(call_method_name);
 	std::vector<Value*> args;
@@ -1401,3 +1410,15 @@ Type* CgenNode::convert_symbol_to_type(const Symbol& sym) {
 		return types_map[type_str];
 }
 
+// 获取builtin function的指针
+Function *util_get_builtin_func(const std::string &name) {
+	if (name == "printlnInt")
+		return xanxus_module->getFunction("printf");
+	else if (name == "printInt")
+        return xanxus_module->getFunction("printf");
+	else if (name == "printlnStr")
+        return xanxus_module->getFunction("printf");
+	else if (name == "printStr")
+        return xanxus_module->getFunction("printf");
+	return nullptr;
+}
