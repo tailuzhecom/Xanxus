@@ -659,11 +659,14 @@ void CgenClassTable::code_main()
 
 CgenNode::CgenNode(Class_ nd, Basicness bstatus, CgenClassTable *ct)
 : class__class((const class__class &) *nd), 
-  parentnd(0), children(0), basic_status(bstatus), class_table(ct), tag(-1)
+  parentnd(0), children(0), basic_status(bstatus), class_table(ct), tag(-1), is_collection(false)
 { 
 	// ADD CODE HERE
 	vtable_name = std::string(name->get_string()) + "_" + "vtable";
 	ctor_name = std::string(name->get_string()) + "_ctor";
+
+	if (std::string(name->get_string()) == "Collection")
+		is_collection = true;
 }
 
 void CgenNode::add_child(CgenNode *n)
@@ -918,6 +921,8 @@ Value* get_class_tag(operand src, CgenNode *src_cls, CgenEnvironment *env) {
 void method_class::code(CgenEnvironment *env)
 {
 	if (cgen_debug) std::cerr << "method_class::code" << endl;
+	if (env->get_class()->is_collection_class())	// 如果是Collection class只需declare
+		return;
 
 	// 获取函数类型
 	// 定义函数
@@ -1263,7 +1268,12 @@ Value* dispatch_class::code(CgenEnvironment *env)
 	if (cgen_debug) std::cerr << "dispatch" << endl;
 	// call builtin
 	Function *builtin_func = util_get_builtin_func(name->get_string());
+
+	if (builtin_func == nullptr)   // 如果没有这个builtin function，则搜索是否为external function
+	    builtin_func = xanxus_module->getFunction(name->get_string());
+
 	if (builtin_func) {
+		// builtin function
 		std::string builtin_name(name->get_string());
 		if (builtin_name == "printlnInt")
 			return xanxus_builder.CreateCall(builtin_func, {xanxus_builder.CreateGlobalStringPtr("%d\n"), actual->nth(0)->code(env)});
@@ -1273,11 +1283,24 @@ Value* dispatch_class::code(CgenEnvironment *env)
             return xanxus_builder.CreateCall(builtin_func, {xanxus_builder.CreateGlobalStringPtr("%s\n"), actual->nth(0)->code(env)});
         else if (builtin_name == "printStr")
             return xanxus_builder.CreateCall(builtin_func, {xanxus_builder.CreateGlobalStringPtr("%s"), actual->nth(0)->code(env)});
+
+        // Collection function
+		std::vector<Value*> args;
+		for (int i = actual->first(); actual->more(i); i = actual->more(i))
+			args.push_back(actual->nth(i)->code(env));
+		Value *res = xanxus_builder.CreateCall(builtin_func, args);
+		return res;
 	}
 
 	// call member function
 	std::string call_method_name = std::string(env->get_class()->get_name()->get_string())  + "_"  + std::string(name->get_string());
 	Function *func = xanxus_module->getFunction(call_method_name);
+
+	if (func == nullptr) {
+        std::cerr << "Error : call a function doesn't exist!" << std::endl;
+        return nullptr;
+    }
+
 	std::vector<Value*> args;
 	args.push_back(env->get_this_ptr());  //　传入this指针
 	for (int i = actual->first(); actual->more(i); i = actual->more(i))
@@ -1327,30 +1350,39 @@ Value* isvoid_class::code(CgenEnvironment *env)
 // Create the LLVM Function corresponding to this method.
 void method_class::layout_feature(CgenNode *cls) 
 {
+	bool is_collection = false;
+	if (std::string(cls->get_name()->get_string()) == "Collection")
+		is_collection = true;
     if (cgen_debug) std::cerr << "method_class::layout_feature" << endl;
 	CgenEnvironment *env = new CgenEnvironment(*(cls->get_classtable()->ct_stream), cls);
 	std::vector<Type*> formals_type_vec;	// 形参类型
 	std::vector<std::string> param_name_vec;  // 形参名
 	// 收集形参的信息
     if (cgen_debug) std::cerr << "collect method info" << endl;
-
-    formals_type_vec.push_back(cls->get_class_type()->getPointerTo());  // 方法的首个参数为this指针
-    param_name_vec.push_back("this");
+	if (is_collection == false) {   // 如果不是Collection类的方法，则要将this指针作第一个参数
+		formals_type_vec.push_back(cls->get_class_type()->getPointerTo());  // 方法的首个参数为this指针
+		param_name_vec.push_back("this");
+	}
 
     for (int i = formals->first(); formals->more(i); i = formals->next(i)) {
 		formals_type_vec.push_back(cls->convert_symbol_to_type(formals->nth(i)->get_type_decl()));
 		param_name_vec.push_back(formals->nth(i)->get_name()->get_string());
 	}
+
 	Type *ret_type = cls->convert_symbol_to_type(return_type);
     if (cgen_debug && ret_type == nullptr) std::cerr << "ret_type is nullptr!" << endl;
     if (cgen_debug) std::cerr << "param_num : " << param_name_vec.size() << endl;
-
 
     if (cgen_debug) std::cerr << "get functiontype" << endl;
 
     FunctionType *func_type = FunctionType::get(ret_type, formals_type_vec, false);
 	// func_name = class_method
-	std::string func_name = cls->create_method_name(name->get_string());
+
+	std::string func_name;
+	if (is_collection)	// 如果该类为Collection类
+		func_name = name->get_string();
+	else
+		func_name = cls->create_method_name(name->get_string());
 	Function *func = Function::Create(func_type, Function::ExternalLinkage, func_name, xanxus_module.get());
 	env->func_ptr = func;
 	cls->vtable_vec_push_back(func_type->getPointerTo());  // 将该方法类型的指针记录到vtable_vec中

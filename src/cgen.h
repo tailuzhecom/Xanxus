@@ -172,6 +172,7 @@ public:
     StructType* get_class_type() { return class_type; }
     StructType* get_vtable_type() { return vtable_type; }
     void name_array_push_back(const std::string &attr_name) { attr_name_array.push_back(attr_name); }
+	bool is_collection_class() const { return is_collection; }
 
 private:
 	// Layout the methods and attributes for code generation
@@ -191,6 +192,7 @@ private:
 	vector<Type*> vtable_vec;  // used to construct vtable type
 	vector<Constant*> vtable_constants; // 方法指针
 	std::vector<std::string> attr_name_array;  // 记录成员变量名在struct type中的index，从０开始
+	bool is_collection;	//是否为collection类
 
 };
 
