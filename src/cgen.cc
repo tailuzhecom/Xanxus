@@ -1028,7 +1028,7 @@ Value* cond_class::code(CgenEnvironment *env)
     phi_node->addIncoming(then_res, then_block);
     phi_node->addIncoming(else_res, else_block);
 
-	return nullptr;
+	return phi_node;
 }
 
 Value* loop_class::code(CgenEnvironment *env)

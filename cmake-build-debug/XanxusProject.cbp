@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6"/>
+	<Project>
+		<Option title="XanxusProject"/>
+		<Option makefile_is_custom="1"/>
+		<Option compiler="gcc"/>
+		<Option virtualFolders="CMake Files\;"/>
+		<Build>
+			<Target title="all">
+				<Option working_dir="/home/young/桌面/XanxusProject/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j4 -f &quot;/home/young/桌面/XanxusProject/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/home/young/桌面/XanxusProject/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/home/young/桌面/XanxusProject/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/home/young/桌面/XanxusProject/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="rebuild_cache">
+				<Option working_dir="/home/young/桌面/XanxusProject/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j4 -f &quot;/home/young/桌面/XanxusProject/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/home/young/桌面/XanxusProject/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/home/young/桌面/XanxusProject/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/home/young/桌面/XanxusProject/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="XanxusProject">
+				<Option output="/home/young/桌面/XanxusProject/cmake-build-debug/XanxusProject" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/young/桌面/XanxusProject/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/home/young/桌面/XanxusProject/src"/>
+					<Add directory="/home/young/桌面/XanxusProject/xanxus-support/include"/>
+					<Add directory="/usr/include/c++/5"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/5"/>
+					<Add directory="/usr/include/c++/5/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/5/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/5/include-fixed"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j4 -f &quot;/home/young/桌面/XanxusProject/cmake-build-debug/Makefile&quot;  VERBOSE=1 XanxusProject"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/home/young/桌面/XanxusProject/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/home/young/桌面/XanxusProject/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/home/young/桌面/XanxusProject/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="XanxusProject/fast">
+				<Option output="/home/young/桌面/XanxusProject/cmake-build-debug/XanxusProject" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/young/桌面/XanxusProject/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/home/young/桌面/XanxusProject/src"/>
+					<Add directory="/home/young/桌面/XanxusProject/xanxus-support/include"/>
+					<Add directory="/usr/include/c++/5"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/5"/>
+					<Add directory="/usr/include/c++/5/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/5/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/5/include-fixed"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j4 -f &quot;/home/young/桌面/XanxusProject/cmake-build-debug/Makefile&quot;  VERBOSE=1 XanxusProject/fast"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/home/young/桌面/XanxusProject/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/home/young/桌面/XanxusProject/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/home/young/桌面/XanxusProject/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="edit_cache">
+				<Option working_dir="/home/young/桌面/XanxusProject/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j4 -f &quot;/home/young/桌面/XanxusProject/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/home/young/桌面/XanxusProject/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/home/young/桌面/XanxusProject/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/home/young/桌面/XanxusProject/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Unit filename="/home/young/桌面/XanxusProject/src/cgen.cc">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/src/cgen.h">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/src/cool-tree.handcode.h">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/src/coolrt.c">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/src/coolrt.h">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/src/operand.cc">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/src/operand.h">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/src/stringtab.handcode.h">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/src/value_printer.cc">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/src/value_printer.h">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/xanxus-support/include/ast-parse.h">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/xanxus-support/include/cgen_gc.h">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/xanxus-support/include/cool-io.h">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/xanxus-support/include/cool-parse.h">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/xanxus-support/include/cool-tree.h">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/xanxus-support/include/cool.h">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/xanxus-support/include/list.h">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/xanxus-support/include/str_aux.h">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/xanxus-support/include/stringtab.h">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/xanxus-support/include/stringtab_functions.h">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/xanxus-support/include/symtab.h">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/xanxus-support/include/tree.h">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/xanxus-support/include/utilities.h">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/xanxus-support/src/ast-lex.cc">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/xanxus-support/src/ast-parse.cc">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/xanxus-support/src/cgen-phase.cc">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/xanxus-support/src/cgen_supp.cc">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/xanxus-support/src/cool-tree.cc">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/xanxus-support/src/dumptype.cc">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/xanxus-support/src/handle_flags.cc">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/xanxus-support/src/str_aux.cc">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/xanxus-support/src/stringtab.cc">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/xanxus-support/src/symtab_example.cc">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/xanxus-support/src/tree.cc">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/xanxus-support/src/utilities.cc">
+			<Option target="XanxusProject"/>
+		</Unit>
+		<Unit filename="/home/young/桌面/XanxusProject/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\"/>
+		</Unit>
+	</Project>
+</CodeBlocks_project_file>

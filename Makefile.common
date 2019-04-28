@@ -1,5 +1,4 @@
 MPDIR   = $(LEVEL)
-CS426 = /class/cs426
 LLVM_DIR = /usr/lib/llvm-3.9
 #LLVMLIBDIR = $(LLVMDIR)/Release+Asserts/lib
 OPT = opt -O3
@@ -27,7 +26,7 @@ endif
 
 
 CPPFLAGS = -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS $(EXTRAFLAGS) \
-	   -I. -I$(MPDIR)/cool-support/include
+	   -I. -I$(MPDIR)/xanxus-support/include
 
 #LDFLAGS = -L$(LLVMDIR)/Release+Asserts/lib
 LDLIBS = 
@@ -42,8 +41,8 @@ CC = clang
 
 .PRECIOUS: %.ast %.bc %.ll %.s %.exe
 
-%.ast: %.cl
-	$(LEXER) $< | $(PARSER) | $(SEMANT) > $@
+%.ast: %.xs
+	$(LEXER) $< | $(PARSER) > $@
 
 %.ll: %.ast $(CGEN)
 	$(CGEN) $(CGENOPTS) < $< > $@
@@ -78,5 +77,5 @@ CC = clang
 	./$< > $@ || true
 
 clean:
-	-rm -f core *.exe *.bc *.ll *.out *.ast *.s *.o *.verify *.dwo
+	-rm -f core *.bc *.ll *.out *.ast *.s *.o *.verify *.dwo
 	$(CLEAN_LOCAL)

@@ -23,7 +23,7 @@ cgen-2: cgen-2.o $(SUPPORT_OBJS)
 cgen-2.o : cgen.cc cgen.h cool-tree.handcode.h $(MPINCL)
 	$(CXX) -c $(CXXFLAGS) $(CPPFLAGS) -DMP3 $<  -o $@
 
-VPATH = ../cool-support/src
+VPATH = ../xanxus-support/src
 
 coolrt.c : coolrt.h
 

@@ -1,0 +1,3 @@
+/home/young/桌面/XanxusProject/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/young/桌面/XanxusProject/cmake-build-debug/CMakeFiles/XanxusProject.dir
+/home/young/桌面/XanxusProject/cmake-build-debug/CMakeFiles/edit_cache.dir

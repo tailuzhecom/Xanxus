@@ -1,8 +1,8 @@
 LEVEL = ..
-TESTS	= $(wildcard *.cl)
-all:	$(TESTS:.cl=.out)
+TESTS	= $(wildcard *.xs)
+all:	$(TESTS:.xs=.out)
 
-CGEN    = $(MPDIR)/src/cgen-1
+CGEN    = $(MPDIR)/src/cgen-2
 
 include $(LEVEL)/Makefile.common
 

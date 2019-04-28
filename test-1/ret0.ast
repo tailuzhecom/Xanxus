@@ -1,124 +1,91 @@
-#25
+#13
 _program
-  #25
+  #13
   _class
     Main
     Object
-    "ret0.cl"
+    "ret0.xs"
     (
-    #24
+    #4
     _method
       main
       Int
-      #24
-      _let
-        a
-        Int
+      #3
+      _dispatch
         #3
-        _no_expr
+        _object
+          self
         : _no_type
-        #22
-        _block
-          #11
-          _cond
-            #4
-            _leq
-              #4
+        printlnInt
+        (
+        #3
+        _dispatch
+          #3
+          _object
+            self
+          : _no_type
+          fib
+          (
+          #3
+          _int
+            1
+          : _no_type
+          )
+        : _no_type
+        )
+      : _no_type
+    #12
+    _method
+      fib
+      #6
+      _formal
+        n
+        Int
+      Int
+      #11
+      _cond
+        #7
+        _lt
+          #7
+          _object
+            n
+          : _no_type
+          #7
+          _int
+            10
+          : _no_type
+        : _no_type
+        #9
+        _plus
+          #8
+          _object
+            n
+          : _no_type
+          #8
+          _dispatch
+            #8
+            _object
+              self
+            : _no_type
+            fib
+            (
+            #8
+            _plus
+              #8
+              _object
+                n
+              : _no_type
+              #8
               _int
                 1
-              : Int
-              #4
-              _int
-                1
-              : Int
-            : Bool
-            #7
-            _block
-              #6
-              _assign
-                a
-                #6
-                _plus
-                  #6
-                  _int
-                    1
-                  : Int
-                  #6
-                  _int
-                    2
-                  : Int
-                : Int
-              : Int
-            : Int
-            #10
-            _block
-              #9
-              _assign
-                a
-                #9
-                _plus
-                  #9
-                  _int
-                    2
-                  : Int
-                  #9
-                  _int
-                    3
-                  : Int
-                : Int
-              : Int
-            : Int
-          : Int
-          #20
-          _cond
-            #13
-            _lt
-              #13
-              _int
-                1
-              : Int
-              #13
-              _int
-                1
-              : Int
-            : Bool
-            #16
-            _block
-              #15
-              _assign
-                a
-                #15
-                _plus
-                  #15
-                  _int
-                    1
-                  : Int
-                  #15
-                  _int
-                    2
-                  : Int
-                : Int
-              : Int
-            : Int
-            #19
-            _block
-              #18
-              _assign
-                a
-                #18
-                _plus
-                  #18
-                  _int
-                    2
-                  : Int
-                  #18
-                  _int
-                    3
-                  : Int
-                : Int
-              : Int
-            : Int
-          : Int
-        : Int
-      : Int
+              : _no_type
+            : _no_type
+            )
+          : _no_type
+        : _no_type
+        #10
+        _int
+          10
+        : _no_type
+      : _no_type
     )
