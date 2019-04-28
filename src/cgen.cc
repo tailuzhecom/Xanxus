@@ -617,12 +617,16 @@ void CgenClassTable::code_main()
 
 	// call puts function in main()
 	xanxus_builder.CreateCall(puts_func, hello_str);
-	Function *Main_main_func = xanxus_module->getFunction("Main_main");
+	Function *Main_main_func = xanxus_module->getFunction("Main_main_0");
 	Type* main_type = xanxus_module->getTypeByName("Main");
+	if (main_type == nullptr)
+	    std::cerr << "Error : Main class hasn't defined." << std::endl;
 	AllocaInst *main_ptr = xanxus_builder.CreateAlloca(main_type);
 	if (main_ptr) {    // 如果已经定义Main class，则call Main_main()
         if (Main_main_func)
             xanxus_builder.CreateCall(Main_main_func, main_ptr);
+        else
+            std::cerr << "Error : main() function doesn't exist." << std::endl;
         xanxus_builder.CreateRetVoid();
     }
     if (cgen_debug) std::cerr << "CgenClassTable::code_main return" << std::endl;
@@ -928,7 +932,7 @@ void method_class::code(CgenEnvironment *env)
 	// 定义函数
 	// 将成员变量加入到符号表
 	//处理形参，将形参加入到符号表中，注意有this*
-	Function *func_ptr = xanxus_module->getFunction(util_create_method_name(name->get_string()));
+	Function *func_ptr = xanxus_module->getFunction(poly_method_name);
 
 	// 获取第一个arg
 	for (auto &arg : func_ptr->args()) {
@@ -941,7 +945,6 @@ void method_class::code(CgenEnvironment *env)
 	// 初始化成员变量
 	env->update_attr();
 	// 初始化函数参数
-
 
 	int arg_idx = 0;
 	for (auto &arg : func_ptr->args()) {
@@ -1239,18 +1242,30 @@ Value* static_dispatch_class::code(CgenEnvironment *env)
 	StructType *static_type = xanxus_module->getTypeByName(type_name->get_string());
 	Value *bitcast_ptr = nullptr;
 	Function *func = nullptr;
-	if (static_type) {    // 如果该类型存在
-		func = xanxus_module->getFunction(call_method_name);
-		if (!func) {	// 所调用的函数不存在
-			std::cerr << "Error: This function doesn't exist." << std::endl;
-			return nullptr;
-		}
-		bitcast_ptr = xanxus_builder.CreateBitCast(call_ptr, static_type->getPointerTo());	// 转换成适合的指针
-	}
-	args.push_back(bitcast_ptr);  //　传入this指针
-	for (int i = actual->first(); actual->more(i); i = actual->more(i))
+
+	for (int i = actual->first(); actual->more(i); i = actual->more(i))     // 先要获取到参数的Value*，才能知道要调用什么函数
 		args.push_back(actual->nth(i)->code(env));
 
+	std::string suffix = "";
+	for (int i = 0; i < args.size(); i++) {    // 静态多态，此时args还没传入this指针
+	    suffix += "_";
+	    suffix += util_get_type_name(args[i]->getType());
+	}
+
+	suffix += "_";
+	suffix += std::to_string(args.size());
+	call_method_name += suffix;
+
+    if (static_type) {    // 如果该类型存在
+        func = xanxus_module->getFunction(call_method_name);
+        if (!func) {	// 所调用的函数不存在
+            std::cerr << "Error: This function doesn't exist." << std::endl;
+            return nullptr;
+        }
+        bitcast_ptr = xanxus_builder.CreateBitCast(call_ptr, static_type->getPointerTo());	// 转换成适合的指针
+    }
+
+    args.insert(args.begin(), bitcast_ptr);  //　传入this指针
 	Value *res = xanxus_builder.CreateCall(func, args);
 
 	return res;
@@ -1294,18 +1309,26 @@ Value* dispatch_class::code(CgenEnvironment *env)
 
 	// call member function
 	std::string call_method_name = std::string(env->get_class()->get_name()->get_string())  + "_"  + std::string(name->get_string());
-	Function *func = xanxus_module->getFunction(call_method_name);
-
-	if (func == nullptr) {
-        std::cerr << "Error : call a function doesn't exist!" << std::endl;
-        return nullptr;
-    }
 
 	std::vector<Value*> args;
 	args.push_back(env->get_this_ptr());  //　传入this指针
 	for (int i = actual->first(); actual->more(i); i = actual->more(i))
 		args.push_back(actual->nth(i)->code(env));
 
+	std::string method_suffix = "";		// 静态多态
+	for (int i = 1; i < args.size(); i++) {		// 跳过this指针
+		method_suffix += "_";
+		method_suffix += util_get_type_name(args[i]->getType());
+	}
+
+	method_suffix += "_";
+	method_suffix += std::to_string(args.size() - 1);
+	call_method_name += method_suffix;	// A_add_int_1
+	Function *func = xanxus_module->getFunction(call_method_name);
+	if (func == nullptr) {
+		std::cerr << "Error : call a function doesn't exist!" << std::endl;
+		return nullptr;
+	}
 	Value *res = xanxus_builder.CreateCall(func, args);
 	return res;
 }
@@ -1364,10 +1387,18 @@ void method_class::layout_feature(CgenNode *cls)
 		param_name_vec.push_back("this");
 	}
 
-    for (int i = formals->first(); formals->more(i); i = formals->next(i)) {
+    for (int i = formals->first(); formals->more(i); i = formals->next(i)) {  // 收集参数信息
 		formals_type_vec.push_back(cls->convert_symbol_to_type(formals->nth(i)->get_type_decl()));
 		param_name_vec.push_back(formals->nth(i)->get_name()->get_string());
 	}
+    std::string method_name_suffix = "";  // 获取方法名的后缀
+    for (int i = 1; i < formals_type_vec.size(); i++) {	// 第一个参数是this指针，跳过
+        method_name_suffix += "_";
+        method_name_suffix += util_get_type_name(formals_type_vec[i]);
+    }
+
+    method_name_suffix += "_";
+    method_name_suffix += std::to_string(formals_type_vec.size() - 1);
 
 	Type *ret_type = cls->convert_symbol_to_type(return_type);
     if (cgen_debug && ret_type == nullptr) std::cerr << "ret_type is nullptr!" << endl;
@@ -1377,12 +1408,20 @@ void method_class::layout_feature(CgenNode *cls)
 
     FunctionType *func_type = FunctionType::get(ret_type, formals_type_vec, false);
 	// func_name = class_method
-
+	if (cgen_debug) std::cerr << "get functiontype finish" << std::endl;
 	std::string func_name;
 	if (is_collection)	// 如果该类为Collection类
 		func_name = name->get_string();
-	else
+	else {
+        if (cgen_debug) std::cerr << "generate method name" << std::endl;
 		func_name = cls->create_method_name(name->get_string());
+		func_name += method_name_suffix;	//　静态多态
+        if (cgen_debug) std::cerr << func_name << std::endl;
+		poly_method_name = func_name;
+
+	}
+    if (cgen_debug)
+	    std::cerr << func_name << std::endl;
 	Function *func = Function::Create(func_type, Function::ExternalLinkage, func_name, xanxus_module.get());
 	env->func_ptr = func;
 	cls->vtable_vec_push_back(func_type->getPointerTo());  // 将该方法类型的指针记录到vtable_vec中
@@ -1467,4 +1506,16 @@ Function *util_get_builtin_func(const std::string &name) {
 	else if (name == "printStr")
         return xanxus_module->getFunction("printf");
 	return nullptr;
+}
+
+// 根据Type返回string
+std::string util_get_type_name(Type *t) {
+    if (t == Type::getInt1Ty(xanxus_context))
+        return "Bool";
+    else if (t == Type::getInt32Ty(xanxus_context))
+        return "Int";
+    else if (t == Type::getDoubleTy(xanxus_context))
+        return "Double";
+    else
+        return t->getStructName();
 }

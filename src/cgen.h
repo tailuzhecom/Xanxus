@@ -296,3 +296,4 @@ std::string util_create_method_name(const std::string &method) { return class_ha
 Constant* util_get_int32(const uint64_t &i) { return ConstantInt::get(Type::getInt32Ty(xanxus_context), APInt(32, i)); }
 Constant* util_get_int1(const uint64_t &i) { return ConstantInt::get(Type::getInt32Ty(xanxus_context), APInt(1, i)); }
 Function *util_get_builtin_func(const std::string &name);
+std::string util_get_type_name(Type *t);
