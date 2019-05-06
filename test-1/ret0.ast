@@ -1,91 +1,189 @@
-#13
+#40
 _program
-  #13
+  #9
+  _class
+    A
+    Object
+    "ret0.xs"
+    (
+    #2
+    _attr
+      a
+      Int
+      #2
+      _no_expr
+      : _no_type
+    #3
+    _attr
+      b
+      Int
+      #3
+      _no_expr
+      : _no_type
+    #8
+    _method
+      add
+      Int
+      #7
+      _block
+        #6
+        _dispatch
+          #6
+          _object
+            self
+          : _no_type
+          printlnStr
+          (
+          #6
+          _string
+            "A::add()"
+          : _no_type
+          )
+        : _no_type
+      : _no_type
+    )
+  #17
+  _class
+    B
+    A
+    "ret0.xs"
+    (
+    #13
+    _attr
+      c
+      Int
+      #13
+      _no_expr
+      : _no_type
+    #16
+    _method
+      add
+      Int
+      #16
+      _let
+        b
+        Int
+        #15
+        _no_expr
+        : _no_type
+        #15
+        _int
+          0
+        : _no_type
+      : _no_type
+    )
+  #40
   _class
     Main
     Object
     "ret0.xs"
     (
-    #4
+    #20
+    _attr
+      a1
+      Int
+      #20
+      _no_expr
+      : _no_type
+    #21
+    _attr
+      a2
+      Bool
+      #21
+      _no_expr
+      : _no_type
+    #22
+    _attr
+      a3
+      A
+      #22
+      _no_expr
+      : _no_type
+    #31
     _method
       main
       Int
-      #3
-      _dispatch
-        #3
-        _object
-          self
+      #29
+      _block
+        #25
+        _assign
+          a3
+          #25
+          _new
+            A
+          : _no_type
         : _no_type
-        printlnInt
-        (
-        #3
+        #26
         _dispatch
-          #3
+          #26
           _object
             self
           : _no_type
-          fib
+          add
           (
-          #3
-          _int
+          #26
+          _object
+            a1
+          : _no_type
+          )
+        : _no_type
+        #27
+        _dispatch
+          #27
+          _object
+            self
+          : _no_type
+          add
+          (
+          #27
+          _bool
             1
           : _no_type
           )
         : _no_type
-        )
       : _no_type
-    #12
+    #35
     _method
-      fib
-      #6
+      add
+      #33
       _formal
-        n
+        a
         Int
       Int
-      #11
-      _cond
-        #7
-        _lt
-          #7
-          _object
-            n
-          : _no_type
-          #7
-          _int
-            10
-          : _no_type
+      #34
+      _dispatch
+        #34
+        _object
+          self
         : _no_type
-        #9
-        _plus
-          #8
-          _object
-            n
-          : _no_type
-          #8
-          _dispatch
-            #8
-            _object
-              self
-            : _no_type
-            fib
-            (
-            #8
-            _plus
-              #8
-              _object
-                n
-              : _no_type
-              #8
-              _int
-                1
-              : _no_type
-            : _no_type
-            )
-          : _no_type
+        printlnStr
+        (
+        #34
+        _string
+          "add_with_Int"
         : _no_type
-        #10
-        _int
-          10
+        )
+      : _no_type
+    #39
+    _method
+      add
+      #37
+      _formal
+        a
+        Bool
+      Int
+      #38
+      _dispatch
+        #38
+        _object
+          self
         : _no_type
+        printlnStr
+        (
+        #38
+        _string
+          "add_with_Bool"
+        : _no_type
+        )
       : _no_type
     )

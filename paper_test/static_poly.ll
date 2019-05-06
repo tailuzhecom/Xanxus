@@ -1,4 +1,6 @@
 declare i32 @strcmp(i8*, i8*)
+declare void @abort()
+declare i8* @malloc(i32)
 ; ModuleID = 'Xanxus'
 source_filename = "Xanxus"
 
@@ -19,10 +21,6 @@ source_filename = "Xanxus"
 @5 = private unnamed_addr constant [14 x i8] c"add_with_Bool\00"
 
 declare i32 @printf(i8*, ...)
-
-declare void @abort()
-
-declare i8* @malloc(i32)
 
 define void @Object_ctor(%Object* %this) {
 entry:
@@ -71,12 +69,11 @@ entry:
   %0 = getelementptr %Main, %Main* %this, i32 0, i32 1
   %1 = getelementptr %Main, %Main* %this, i32 0, i32 2
   %2 = getelementptr %Main, %Main* %this, i32 0, i32 3
-  %3 = call i8* @malloc(i32 16)
-  %4 = bitcast i8* %3 to %A*
-  store %A* %4, %A** %2
-  %5 = load i32, i32* %0
-  %6 = call i32 @Main_add_Int_1(%Main* %this, i32 %5)
-  %7 = call i32 @Main_add_Bool_1(%Main* %this, i1 true)
+  %3 = load i32, i32* %0
+  %4 = call i32 @Main_add_Int_1(%Main* %this, i32 %3)
+  %5 = call i32 @Main_add_Bool_1(%Main* %this, i1 true)
+  %6 = load %A*, %A** %2
+  %7 = call i32 @A_add_0(%A* %6)
   ret i32 %7
 }
 

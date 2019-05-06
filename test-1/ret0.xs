@@ -1,13 +1,40 @@
+class A {
+  a : Int;
+  b : Int;
+  add() : Int {
+    {
+    printlnStr("A::add()");
+    }
+  };
+};
+  
+
+class B inherits A {
+  c : Int;
+  add() : Int {
+    let b : Int in 0
+  };
+};
+
 class Main {
+  a1 : Int;
+  a2 : Bool;
+  a3 : A;
   main(): Int {
-     printlnInt(fib(1))
+    {
+    a3 <- new A;
+    add(a1);
+    add(true);
+    
+    }	
+    
   };
 
-  fib(n : Int) : Int {
-      if n < 10 then
-          n + fib(n + 1)
-      else
-          10
-      fi
+  add(a : Int) : Int {
+     printlnStr("add_with_Int")
+  };
+
+  add(a : Bool) : Int {
+     printlnStr("add_with_Bool")
   };
 };

@@ -43,6 +43,7 @@ using namespace llvm;
 llvm::LLVMContext xanxus_context;
 llvm::IRBuilder<> xanxus_builder(xanxus_context);
 std::unique_ptr<llvm::Module> xanxus_module = make_unique<Module>("Xanxus", xanxus_context);
+std::unique_ptr<DataLayout> datalayout = make_unique<DataLayout>(xanxus_module.get());
 std::map<std::string, Type*> types_map; // 将所有声明的StructType类型都存储在这里
 std::string class_handling_str;
 
@@ -297,3 +298,4 @@ Constant* util_get_int32(const uint64_t &i) { return ConstantInt::get(Type::getI
 Constant* util_get_int1(const uint64_t &i) { return ConstantInt::get(Type::getInt32Ty(xanxus_context), APInt(1, i)); }
 Function *util_get_builtin_func(const std::string &name);
 std::string util_get_type_name(Type *t);
+Type* util_convert_symbol_to_type(const Symbol& sym);
