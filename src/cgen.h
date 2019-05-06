@@ -165,7 +165,6 @@ public:
 	string get_type_name() { return string(name->get_string()); }
 
 	void setup_attr_types(Symbol type_decl, CgenNode *cls);
-	Type* convert_symbol_to_type(const Symbol& sym);
 	void vtable_vec_push_back(Type *vtable_item) { vtable_vec.push_back(vtable_item); }
 	void vtable_constant_push_back(Constant *item) { vtable_constants.push_back(item); }
 	// 生成llvm中的方法名

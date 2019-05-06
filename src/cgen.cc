@@ -1160,8 +1160,12 @@ Value* bool_const_class::code(CgenEnvironment *env)
 Value* object_class::code(CgenEnvironment *env)
 {
 	if (cgen_debug) std::cerr << "Object" << endl;
-	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
-	// MORE MEANINGFUL
+
+	// nil == NULL
+	if (std::string(name->get_string()) == "nil")
+	    return nullptr;
+
+
 	Value *obj_ptr = env->lookup(name->get_string());
 	Value *res = xanxus_builder.CreateLoad(obj_ptr);
 	return res;
@@ -1337,7 +1341,7 @@ void method_class::layout_feature(CgenNode *cls)
 	}
 
     for (int i = formals->first(); formals->more(i); i = formals->next(i)) {  // 收集参数信息
-		formals_type_vec.push_back(cls->convert_symbol_to_type(formals->nth(i)->get_type_decl()));
+		formals_type_vec.push_back(util_convert_symbol_to_type(formals->nth(i)->get_type_decl()));
 		param_name_vec.push_back(formals->nth(i)->get_name()->get_string());
 	}
     std::string method_name_suffix = "";  // 获取方法名的后缀
@@ -1349,7 +1353,7 @@ void method_class::layout_feature(CgenNode *cls)
     method_name_suffix += "_";
     method_name_suffix += std::to_string(formals_type_vec.size() - 1);
 
-	Type *ret_type = cls->convert_symbol_to_type(return_type);
+	Type *ret_type = util_convert_symbol_to_type(return_type);
     if (cgen_debug && ret_type == nullptr) std::cerr << "ret_type is nullptr!" << endl;
     if (cgen_debug) std::cerr << "param_num : " << param_name_vec.size() << endl;
 
@@ -1425,25 +1429,6 @@ void CgenNode::setup_attr_types(Symbol type_decl, CgenNode *cls) {
         cls->attr_types.push_back(xanxus_module->getTypeByName(type_str)->getPointerTo());
 }
 
-// sym为Symbol类型的Type
-Type* CgenNode::convert_symbol_to_type(const Symbol& sym) {
-	std::string type_str(sym->get_string());
-    if (cgen_debug) std::cerr << "Type: " << type_str << endl;
-
-    if (type_str == "Int")
-		return Type::getInt32Ty(xanxus_context);
-	else if (type_str == "Bool")
-		return Type::getInt1Ty(xanxus_context);
-	else if (type_str == "Object")
-	    return Type::getVoidTy(xanxus_context);     // TODO
-	else if (type_str == "String")
-	    return Type::getInt32Ty(xanxus_context)->getPointerTo(); // TODO
-	else if (type_str == "SELF_TYPE")
-	    return Type::getVoidTy(xanxus_context); // TODO
-	else
-		return types_map[type_str];
-}
-
 // 获取builtin function的指针
 Function *util_get_builtin_func(const std::string &name) {
 	if (name == "printlnInt")
@@ -1483,6 +1468,8 @@ Type* util_convert_symbol_to_type(const Symbol& sym) {
         return Type::getInt32Ty(xanxus_context)->getPointerTo(); // TODO
     else if (type_str == "SELF_TYPE")
         return Type::getVoidTy(xanxus_context); // TODO
+    else if (type_str == "Void")
+        return Type::getVoidTy(xanxus_context);
     else
         return xanxus_module->getTypeByName(type_str);
 
