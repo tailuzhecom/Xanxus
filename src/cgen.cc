@@ -1037,7 +1037,13 @@ Value* let_class::code(CgenEnvironment *env)
 		param = xanxus_builder.CreateAlloca(Type::getInt1Ty(xanxus_context), nullptr, identifier->get_string());
 	else if(type_str == "Int")
 		param = xanxus_builder.CreateAlloca(Type::getInt32Ty(xanxus_context), nullptr, identifier->get_string());
-	// TODO StructType allocation
+	else {    // StructType
+	    Type *type = xanxus_module->getTypeByName(type_str);
+	    if (type)
+	        param = xanxus_builder.CreateAlloca(type, nullptr, identifier->get_string());
+        else
+            std::cerr << "Error: the type of variable in let doesn't exist." << std::endl;
+	}
 
 	env->add_local(identifier->get_string(), param);
 
@@ -1062,8 +1068,7 @@ Value* let_class::code(CgenEnvironment *env)
 Value* plus_class::code(CgenEnvironment *env)
 { 
 	if (cgen_debug) std::cerr << "plus" << endl;
-	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
-	// MORE MEANINGFUL
+
 	Value *res = xanxus_builder.CreateAdd(e1->code(env), e2->code(env));
 	return res;
 }
@@ -1071,8 +1076,7 @@ Value* plus_class::code(CgenEnvironment *env)
 Value* sub_class::code(CgenEnvironment *env)
 { 
 	if (cgen_debug) std::cerr << "sub" << endl;
-	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
-	// MORE MEANINGFUL
+
 	Value *res = xanxus_builder.CreateSub(e1->code(env), e2->code(env));
 	return res;
 }
@@ -1080,8 +1084,7 @@ Value* sub_class::code(CgenEnvironment *env)
 Value* mul_class::code(CgenEnvironment *env)
 { 
 	if (cgen_debug) std::cerr << "mul" << endl;
-	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
-	// MORE MEANINGFUL
+
 	Value *res = xanxus_builder.CreateMul(e1->code(env), e2->code(env));
 	return res;
 }
@@ -1089,8 +1092,7 @@ Value* mul_class::code(CgenEnvironment *env)
 Value* divide_class::code(CgenEnvironment *env)
 { 
 	if (cgen_debug) std::cerr << "div" << endl;
-	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
-	// MORE MEANINGFUL
+
 	Value *res = xanxus_builder.CreateSDiv(e1->code(env), e2->code(env));
 	return res;
 }
@@ -1098,16 +1100,14 @@ Value* divide_class::code(CgenEnvironment *env)
 Value* neg_class::code(CgenEnvironment *env)
 { 
 	if (cgen_debug) std::cerr << "neg" << endl;
-	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
-	// MORE MEANINGFUL
+
 	return nullptr;
 }
 
 Value* lt_class::code(CgenEnvironment *env)
 {
 	if (cgen_debug) std::cerr << "lt" << endl;
-	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
-	// MORE MEANINGFUL
+
 	Value *res = xanxus_builder.CreateICmpSLT(e1->code(env), e2->code(env));
 	return res;
 }
@@ -1115,8 +1115,7 @@ Value* lt_class::code(CgenEnvironment *env)
 Value* eq_class::code(CgenEnvironment *env)
 {
 	if (cgen_debug) std::cerr << "eq" << endl;
-	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
-	// MORE MEANINGFUL
+
 	Value *res = xanxus_builder.CreateICmpEQ(e1->code(env), e2->code(env));
 	return res;
 }
@@ -1124,8 +1123,7 @@ Value* eq_class::code(CgenEnvironment *env)
 Value* leq_class::code(CgenEnvironment *env)
 {
 	if (cgen_debug) std::cerr << "leq" << endl;
-	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
-	// MORE MEANINGFUL
+
 	Value *res = xanxus_builder.CreateICmpSLE(e1->code(env), e2->code(env));
 	return res;
 }
@@ -1133,8 +1131,7 @@ Value* leq_class::code(CgenEnvironment *env)
 Value* comp_class::code(CgenEnvironment *env)
 {
 	if (cgen_debug) std::cerr << "complement" << endl;
-	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
-	// MORE MEANINGFUL
+
 	//Value *res = xanxus_builder.Create()
 	return nullptr;
 }
@@ -1142,8 +1139,7 @@ Value* comp_class::code(CgenEnvironment *env)
 Value* int_const_class::code(CgenEnvironment *env)
 {
 	if (cgen_debug) std::cerr << "Integer Constant" << endl;
-	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
-	// MORE MEANINGFUL
+
 	Value *int_const = ConstantInt::get(xanxus_context, APInt(32, atoi(token->get_string())));
 	return int_const;
 }
@@ -1151,8 +1147,7 @@ Value* int_const_class::code(CgenEnvironment *env)
 Value* bool_const_class::code(CgenEnvironment *env)
 {
 	if (cgen_debug) std::cerr << "Boolean Constant" << endl;
-	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
-	// MORE MEANINGFUL
+
 	Value *bool_const = ConstantInt::get(xanxus_context, APInt(1, val));
 	return bool_const;
 }
@@ -1174,8 +1169,7 @@ Value* object_class::code(CgenEnvironment *env)
 Value* no_expr_class::code(CgenEnvironment *env)
 {
 	if (cgen_debug) std::cerr << "No_expr" << endl;
-	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
-	// MORE MEANINGFUL
+
 	return nullptr;
 }
 
