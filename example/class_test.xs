@@ -4,7 +4,7 @@ class A {
   add() : Int {
     printlnStr("A::add()")
   };
-  fib(n : Int) : Int {
+  sum(n : Int) : Int {
      if n < 10 then
         n <- n + fib(n + 1)
      else
@@ -36,7 +36,7 @@ class Main {
     }
     fi;
     add();
-    a3@A.add();
+    a3@A.sum();
     }	
     
   };
