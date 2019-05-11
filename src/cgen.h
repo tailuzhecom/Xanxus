@@ -75,11 +75,10 @@ private:
     
 	// Create declarations for C runtime functions we need to generate code
 	void setup_external_functions();
-	void setup_classes(CgenNode *c, int depth, std::vector<std::string> attr_array, std::vector<Type*> type_array);
-
+	void setup_classes(CgenNode *c, int depth, std::vector<std::string> attr_array, std::vector<Type*> type_array,
+                       std::vector<Type*> vtable_type_array, std::vector<std::string> func_array, std::vector<Constant*> vtable_constant_array);
 
 	void code_classes(CgenNode *c);
-
 
 	// The following creates an inheritance graph from a list of classes.  
 	// The graph is implemented as a tree of `CgenNode', and class names 
@@ -118,10 +117,6 @@ public:
 	enum Basicness
 	{ Basic, NotBasic };
 
-#ifndef MP3
-	void codeGenMainmain();
-#endif
-
 private: 
 	CgenNode *parentnd;                        // Parent of class
 	List<CgenNode> *children;                  // Children of class
@@ -156,7 +151,8 @@ public:
 	virtual ~CgenNode() { }
 
 	// Class setup. You need to write the body of this function.
-	void setup(int tag, int depth, std::vector<std::string> &attr_array, std::vector<Type*> &type_array);
+	void setup(int tag, int depth, std::vector<std::string> &attr_array, std::vector<Type*> &vtable_type_array,
+                std::vector<Type*> &type_array, std::vector<std::string> &func_array, std::vector<Constant*> &vtable_constant_array);
 
 	// Class codegen. You need to write the body of this function.
 	void code_class();
@@ -173,6 +169,10 @@ public:
     StructType* get_vtable_type() { return vtable_type; }
     void name_array_push_back(const std::string &attr_name) { attr_name_array.push_back(attr_name); }
 	bool is_collection_class() const { return is_collection; }
+	void function_vec_push_back(const std::string &name) { function_vec.push_back(name); };
+    int find_function(const std::string &name);
+    void vtable_constant_override(Constant *func_ptr, int idx) { vtable_constants[idx] = func_ptr; }
+    void vtable_type_override(Type *t, int idx) { vtable_vec[idx] = t; }
 
 private:
 	// Layout the methods and attributes for code generation
@@ -193,7 +193,7 @@ private:
 	vector<Constant*> vtable_constants; // 方法指针
 	std::vector<std::string> attr_name_array;  // 记录成员变量名在struct type中的index，从０开始
 	bool is_collection;	//是否为collection类
-
+	std::vector<std::string> function_vec;  // 用于计算函数在虚表中的偏移
 };
 
 //

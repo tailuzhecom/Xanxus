@@ -523,23 +523,23 @@ void CgenClassTable::setup()
 {
     if (cgen_debug) std::cerr << "CgenClassTable::setup" << endl;
 	setup_external_functions();
-	setup_classes(root(), 0, std::vector<std::string>(), std::vector<Type*>());
+	setup_classes(root(), 0, std::vector<std::string>(), std::vector<Type*>(), std::vector<Type*>(), std::vector<std::string>(), std::vector<Constant*>());
 }
 
 // 设置current_tag和max_child，attr_array和type_array用于收集继承的属性
-void CgenClassTable::setup_classes(CgenNode *c, int depth, std::vector<std::string> attr_array, std::vector<Type*> type_array)
+void CgenClassTable::setup_classes(CgenNode *c, int depth, std::vector<std::string> attr_array, std::vector<Type*> type_array,
+                                   std::vector<Type*> vtable_type_array, std::vector<std::string> func_array, std::vector<Constant*> vtable_constant_array)
 {
     if (cgen_debug) std::cerr << "CgenClassTable::setup_classes" << endl;
-	// MAY ADD CODE HERE
-	// if you want to give classes more setup information
 
-	c->setup(current_tag++, depth, attr_array, type_array); // layout_feature在此调用,收集attr信息
+	c->setup(current_tag++, depth, attr_array, type_array, vtable_type_array, func_array, vtable_constant_array); // layout_feature在此调用,收集attr信息
 
 	std::vector<std::string> attr_array_collection(attr_array);
 	std::vector<Type*> type_array_collection(type_array);
+
 	List<CgenNode> *children = c->get_children();
 	for (List<CgenNode> *child = children; child; child = child->tl())
-		setup_classes(child->hd(), depth + 1, attr_array_collection, type_array_collection);  // 遍历继承树
+		setup_classes(child->hd(), depth + 1, attr_array_collection, type_array_collection, vtable_type_array, func_array, vtable_constant_array);  // 遍历继承树
 	
 	c->set_max_child(current_tag-1);
 
@@ -563,7 +563,6 @@ void CgenClassTable::code_module()
 	// This must be after code_module() since that emits constants
 	// needed by the code() method for expressions
 	CgenNode* mainNode = getMainmain(root());
-	mainNode->codeGenMainmain();
 #endif
 	code_main();
 
@@ -615,9 +614,13 @@ void CgenClassTable::code_main()
 	// xanxus_builder.CreateCall(puts_func, hello_str);
 	Function *Main_main_func = xanxus_module->getFunction("Main_main_0");
 	Type* main_type = xanxus_module->getTypeByName("Main");
+
+
 	if (main_type == nullptr)
 	    std::cerr << "Error : Main class hasn't defined." << std::endl;
 	AllocaInst *main_ptr = xanxus_builder.CreateAlloca(main_type);
+	Function *main_ctor = xanxus_module->getFunction("Main_ctor");
+	xanxus_builder.CreateCall(main_ctor, main_ptr);
 	if (main_ptr) {    // 如果已经定义Main class，则call Main_main()
         if (Main_main_func)
             xanxus_builder.CreateCall(Main_main_func, main_ptr);
@@ -671,15 +674,26 @@ void CgenNode::set_parentnd(CgenNode *p)
 //  - create the types for the class and its vtable
 //  - create global definitions used by the class such as the class vtable
 //
-void CgenNode::setup(int tag, int depth, std::vector<std::string> &attr_array, std::vector<Type*> &type_array)
+void CgenNode::setup(int tag, int depth, std::vector<std::string> &attr_array,
+            std::vector<Type*> &type_array, std::vector<Type*> &vtable_type_array, std::vector<std::string> &func_array, std::vector<Constant*> &vtable_constant_array)
 {
     if (cgen_debug) std::cerr << "CgenNode::setup" << endl;
 	this->tag = tag;
 	attr_name_array = attr_array;  // attr继承，将父类的attr赋给子类
 	attr_types = type_array;
+
+	vtable_vec = vtable_type_array;  // method继承
+	function_vec = func_array;
+	vtable_constants = vtable_constant_array;
+
 	this->layout_features();
+
 	attr_array = attr_name_array;  // 通过layout_feature()收集到子类的attr
 	type_array = attr_types; // 返回的type_array中没有%vtable*
+
+	vtable_type_array = vtable_vec;
+	func_array = function_vec;
+	vtable_constant_array = vtable_constants;
 
 	attr_types.insert(attr_types.begin(), vtable_type->getPointerTo());  // StructType的第一个元素为vtable的指针
 	//std::cerr << std::string(name->get_string()) << "type nums: : " << attr_types.size() << std::endl;
@@ -751,7 +765,8 @@ void CgenNode::create_struct_type() {
 }
 
 // 创建class的默认构造函数
-void CgenNode::create_ctor() {
+void CgenNode::create_ctor()
+{
     if(cgen_debug)
         std::cerr << "CgenNode::create_ctor" << endl;
     FunctionType *ctor_type = FunctionType::get(Type::getVoidTy(xanxus_context), {class_type->getPointerTo()}, false);
@@ -771,13 +786,44 @@ void CgenNode::create_ctor() {
     Value *vtable_ptr= xanxus_builder.CreateLoad(vtable_ptr_2); // %vtable* = load %vtable**
     xanxus_builder.CreateStore(vtable_const, vtable_ptr);   // store vtable_const, %vtable*
 
+
     //TODO 初始化成员变量值
 
+    // 调用non-primitive成员的构造函数
+    int member_idx = 0;
+    for (auto member : class_type->elements()) {
+    	if (member_idx == 0) {    // 跳过vtable
+			member_idx++;
+			continue;
+		}
+
+    	if (member->isPointerTy()) { // 只有非primitive类型的成员才以指针的形式存在
+    		Type *member_type = member->getPointerElementType();
+    		std::string member_ctor_name = member_type->getStructName().str() + "_ctor";
+    		Function *member_ctor = xanxus_module->getFunction(member_ctor_name);		// 获取该成员的构造函数
+    		if (member_ctor == nullptr)
+    			std::cerr << "This ctor doesn't exist" << std::endl;
+    		std::vector<Value*> gep_list({util_get_int32(0), util_get_int32(member_idx)});
+    		Value *attr_ptr = xanxus_builder.CreateGEP(this_ptr, gep_list);
+    		Value *attr = xanxus_builder.CreateLoad(attr_ptr);
+    		xanxus_builder.CreateCall(member_ctor, {attr});
+    	}
+    	member_idx++;
+    }
 
     // 返回
     xanxus_builder.CreateRetVoid();
 }
 
+// 返回方法的偏移量，不存在返回-1
+int CgenNode::find_function(const std::string &name)
+{
+    for (int i = 0; i < function_vec.size(); i++)
+        if (function_vec[i] == name)
+            return i;
+
+    return -1;
+}
 
 //
 // CgenEnvironment functions
@@ -1227,6 +1273,7 @@ Value* string_const_class::code(CgenEnvironment *env)
 Value* dispatch_class::code(CgenEnvironment *env)
 {
 	if (cgen_debug) std::cerr << "dispatch" << endl;
+
 	// call builtin
 	Function *builtin_func = util_get_builtin_func(name->get_string());
 
@@ -1253,7 +1300,7 @@ Value* dispatch_class::code(CgenEnvironment *env)
 		return res;
 	}
 
-	// call member function
+    // call member function
 	std::string call_method_name = std::string(env->get_class()->get_name()->get_string())  + "_"  + std::string(name->get_string());
 
 	std::vector<Value*> args;
@@ -1270,6 +1317,24 @@ Value* dispatch_class::code(CgenEnvironment *env)
 	method_suffix += "_";
 	method_suffix += std::to_string(args.size() - 1);
 	call_method_name += method_suffix;	// A_add_int_1
+
+	std::string method_without_class = name->get_string();
+	method_without_class += method_suffix;
+	Value *obj = expr->code(env);
+    if (obj) {     // 动态多态，此时obj不为空
+        int method_offset = env->get_class()->find_function(method_without_class);  // 函数指针在虚表中的偏移量
+        std::vector<Value*> vtable_gep_list({util_get_int32(0), util_get_int32(0)});
+        Value *vtable_ptr = xanxus_builder.CreateGEP(obj, vtable_gep_list);
+        Value *vtable = xanxus_builder.CreateLoad(vtable_ptr);
+        std::vector<Value*> method_gep_list({util_get_int32(0), util_get_int32(method_offset)});
+        Value *method_ptr = xanxus_builder.CreateGEP(vtable_ptr, method_gep_list);
+        Value *method_val = xanxus_builder.CreateLoad(method_ptr);
+
+        // TODO 获取函数的this指针的类型，使用bitcast将obj转换为对应类型
+
+    }
+
+    // obj为空
 	Function *func = xanxus_module->getFunction(call_method_name);
 	if (func == nullptr) {
 		std::cerr << "Error : call a function doesn't exist!" << std::endl;
@@ -1283,12 +1348,7 @@ Value* typcase_class::code(CgenEnvironment *env)
 {
 	if (cgen_debug) 
 		std::cerr << "typecase::code()" << endl;
-#ifndef MP3
-	assert(0 && "Unsupported case for phase 1");
-#else
-	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
-	// MORE MEANINGFUL
-#endif
+
 	return nullptr;
 }
 
@@ -1308,12 +1368,7 @@ Value* new__class::code(CgenEnvironment *env)
 Value* isvoid_class::code(CgenEnvironment *env)
 {
 	if (cgen_debug) std::cerr << "isvoid" << endl;
-#ifndef MP3
-	assert(0 && "Unsupported case for phase 1");
-#else
-	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
-	// MORE MEANINGFUL
-#endif
+
 	return nullptr;
 }
 
@@ -1354,25 +1409,39 @@ void method_class::layout_feature(CgenNode *cls)
     if (cgen_debug) std::cerr << "get functiontype" << endl;
 
     FunctionType *func_type = FunctionType::get(ret_type, formals_type_vec, false);
+
+    int method_offset = -1;
 	// func_name = class_method
 	if (cgen_debug) std::cerr << "get functiontype finish" << std::endl;
-	std::string func_name;
+	std::string func_name, func_name_without_class;
 	if (is_collection)	// 如果该类为Collection类
 		func_name = name->get_string();
-	else {
+	else {   // 如果该类为普通类
         if (cgen_debug) std::cerr << "generate method name" << std::endl;
 		func_name = cls->create_method_name(name->get_string());
 		func_name += method_name_suffix;	//　静态多态
         if (cgen_debug) std::cerr << func_name << std::endl;
 		poly_method_name = func_name;
 
+		func_name_without_class = name->get_string();  // 动态多态名称搜索，A::test() -> test_0
+		func_name_without_class += method_name_suffix;
+		method_offset = cls->find_function(func_name_without_class);
 	}
+
     if (cgen_debug)
 	    std::cerr << func_name << std::endl;
 	Function *func = Function::Create(func_type, Function::ExternalLinkage, func_name, xanxus_module.get());
-	env->func_ptr = func;
-	cls->vtable_vec_push_back(func_type->getPointerTo());  // 将该方法类型的指针记录到vtable_vec中
-	cls->vtable_constant_push_back(func);
+	env->func_ptr = func;   // 用于method::code()
+
+	// 处理vtable offset
+	if (method_offset == -1) {  // not override
+        cls->vtable_vec_push_back(func_type->getPointerTo());  // 将该方法类型的指针记录到vtable_vec中
+        cls->vtable_constant_push_back(func);
+		cls->function_vec_push_back(func_name_without_class);
+    } else {    // override
+		cls->vtable_type_override(func_type->getPointerTo(), method_offset);	// this指针的类型改变
+	    cls->vtable_constant_override(func, method_offset);
+	}
 
     if (cgen_debug) std::cerr << "create name for param" << endl;
     // 标注形参名
