@@ -490,7 +490,7 @@ CgenClassTable::CgenClassTable(Classes classes, ostream& s)
 {
 	if (cgen_debug) std::cerr << "Building CgenClassTable" << endl;
 	ct_stream = &s;
-
+	xanxus_module->setDataLayout(xanxus_module->getTargetTriple());
 	// Make sure we have a scope, both for classes and for constants
 	enterscope();
 
@@ -533,6 +533,8 @@ void CgenClassTable::setup_classes(CgenNode *c, int depth, std::vector<std::stri
     if (cgen_debug) std::cerr << "CgenClassTable::setup_classes" << endl;
 
 	c->setup(current_tag++, depth, attr_array, type_array, vtable_type_array, func_array, vtable_constant_array); // layout_feature在此调用,收集attr信息
+
+	type_func_ptrs[std::string(c->get_name()->get_string())] = func_array;
 
 	std::vector<std::string> attr_array_collection(attr_array);
 	std::vector<Type*> type_array_collection(type_array);
@@ -781,10 +783,13 @@ void CgenNode::create_ctor()
 
     // 初始化vtable
     Constant *vtable_const = ConstantStruct::get(vtable_type, vtable_constants);
+    GlobalVariable *global_vtable_const = new GlobalVariable(*xanxus_module, vtable_type, true, GlobalValue::ExternalLinkage, vtable_const);
     std::vector<Value*> gep_list({util_get_int32(0), util_get_int32(0)});
     Value *vtable_ptr_2 = xanxus_builder.CreateGEP(this_ptr, gep_list);  // %vtable** = getelementptr %this, 0, 0
-    Value *vtable_ptr= xanxus_builder.CreateLoad(vtable_ptr_2); // %vtable* = load %vtable**
-    xanxus_builder.CreateStore(vtable_const, vtable_ptr);   // store vtable_const, %vtable*
+    xanxus_builder.CreateStore(global_vtable_const, vtable_ptr_2);
+//    Value *vtable_ptr= xanxus_builder.CreateLoad(vtable_ptr_2); // %vtable* = load %vtable**
+//    Value *vtable_val = xanxus_builder.CreateLoad(global_vtable_const);
+//    xanxus_builder.CreateStore(vtable_val, vtable_ptr);   // store vtable_const, %vtable*
 
 
     //TODO 初始化成员变量值
@@ -978,10 +983,11 @@ void method_class::code(CgenEnvironment *env)
 Value* assign_class::code(CgenEnvironment *env)
 { 
 	if (cgen_debug) std::cerr << "assign" << endl;
-	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
-	// MORE MEANINGFUL
+
 	Value *var = env->lookup(name->get_string());
 	Value *assign_val = expr->code(env);
+	if (assign_val->getType()->isPointerTy())
+	    assign_val = xanxus_builder.CreateBitCast(assign_val, var->getType()->getPointerElementType());  // 将右值的类型转为左值的类型
 	xanxus_builder.CreateStore(assign_val, var, false);
 	return assign_val;
 }
@@ -1215,7 +1221,6 @@ Value* object_class::code(CgenEnvironment *env)
 Value* no_expr_class::code(CgenEnvironment *env)
 {
 	if (cgen_debug) std::cerr << "No_expr" << endl;
-
 	return nullptr;
 }
 
@@ -1321,20 +1326,36 @@ Value* dispatch_class::code(CgenEnvironment *env)
 	std::string method_without_class = name->get_string();
 	method_without_class += method_suffix;
 	Value *obj = expr->code(env);
+
     if (obj) {     // 动态多态，此时obj不为空
-        int method_offset = env->get_class()->find_function(method_without_class);  // 函数指针在虚表中的偏移量
-        std::vector<Value*> vtable_gep_list({util_get_int32(0), util_get_int32(0)});
-        Value *vtable_ptr = xanxus_builder.CreateGEP(obj, vtable_gep_list);
-        Value *vtable = xanxus_builder.CreateLoad(vtable_ptr);
-        std::vector<Value*> method_gep_list({util_get_int32(0), util_get_int32(method_offset)});
-        Value *method_ptr = xanxus_builder.CreateGEP(vtable_ptr, method_gep_list);
-        Value *method_val = xanxus_builder.CreateLoad(method_ptr);
+		if (cgen_debug) std::cerr << "object is not null" << endl;
 
-        // TODO 获取函数的this指针的类型，使用bitcast将obj转换为对应类型
+        int method_offset = util_get_method_offset(obj->getType()->getPointerElementType()->getStructName().str(), method_without_class);  // 函数指针在虚表中的偏移量
+        if (cgen_debug) std::cerr << "method_offset: " << method_offset << endl;
+        if (method_offset != -1) {
+            std::vector<Value *> vtable_gep_list({util_get_int32(0), util_get_int32(0)});
+            Value *vtable_ptr = xanxus_builder.CreateGEP(obj, vtable_gep_list);
+            Value *vtable = xanxus_builder.CreateLoad(vtable_ptr);
+            std::vector<Value *> method_gep_list({util_get_int32(0), util_get_int32(method_offset)});
+            Value *method_ptr = xanxus_builder.CreateGEP(vtable, method_gep_list);
+            Value *method_val = xanxus_builder.CreateLoad(method_ptr);
+            if (cgen_debug) std::cerr << "get method finish" << endl;
 
+            // TODO 获取函数的this指针的类型，使用bitcast将obj转换为对应类型
+            FunctionType *func_type = dyn_cast<FunctionType>(method_val->getType()->getPointerElementType());
+            Type *this_ptr_type = func_type->getFunctionParamType(0);   // 获取this指针的类型
+            if (cgen_debug) std::cerr << "this type: " << this_ptr_type->getPointerElementType()->getStructName().str() << endl;
+            Value *this_arg = xanxus_builder.CreateBitCast(obj, this_ptr_type);
+            args[0] = this_arg; // this指针传入值
+            return xanxus_builder.CreateCall(method_val, args);
+        }
+        else {
+            std::cerr << "Error: dispatch method doesn't exist" << std::endl;
+            return nullptr;
+        }
     }
 
-    // obj为空
+    // obj为空，调用形式为method(...)
 	Function *func = xanxus_module->getFunction(call_method_name);
 	if (func == nullptr) {
 		std::cerr << "Error : call a function doesn't exist!" << std::endl;
@@ -1352,6 +1373,7 @@ Value* typcase_class::code(CgenEnvironment *env)
 	return nullptr;
 }
 
+// A <- new B
 Value* new__class::code(CgenEnvironment *env)
 {
 	if (cgen_debug) std::cerr << "newClass" << endl;
@@ -1362,7 +1384,19 @@ Value* new__class::code(CgenEnvironment *env)
     Function *malloc_func = xanxus_module->getFunction("malloc");
     if (cgen_debug && malloc_func == nullptr) std::cerr << "This function doesn't exist." << endl;
     Value *obj = xanxus_builder.CreateCall(malloc_func, {util_get_int32(alloc_size)});
-	return xanxus_builder.CreateBitCast(obj, t->getPointerTo());
+    std::string ctor_name = t->getStructName().str();
+    ctor_name += "_ctor";
+    Function *ctor = xanxus_module->getFunction(ctor_name); // 获取该类的构造函数
+
+    if (ctor) {
+    	obj = xanxus_builder.CreateBitCast(obj, t->getPointerTo());  // bitcast i8* to B*
+        xanxus_builder.CreateCall(ctor, obj);	// call ctor(B*)
+		return obj;
+    }
+    else {
+        if (cgen_debug) std::cerr << "Ctor deosn't exist" << std::endl;
+        return nullptr;
+    }
 }
 
 Value* isvoid_class::code(CgenEnvironment *env)
@@ -1536,4 +1570,23 @@ Type* util_convert_symbol_to_type(const Symbol& sym) {
     else
         return xanxus_module->getTypeByName(type_str);
 
+}
+
+int util_get_method_offset(const std::string &class_name, const std::string &method_name)
+{
+    std::vector<std::string> vtable_array = type_func_ptrs[class_name];
+    for (int i = 0; i < vtable_array.size(); i++)
+        if (method_name == vtable_array[i])
+            return i;
+
+    return -1;
+}
+
+// 调用obj的构造函数并返回，obj必须为一重指针
+Value* util_struct_init(Value *obj) {
+    Type *origin_type = obj->getType()->getPointerElementType();
+    std::string ctor_name = origin_type->getStructName().str();
+    ctor_name += "_ctor";
+    Function *ctor = xanxus_module->getFunction(ctor_name);
+    return xanxus_builder.CreateCall(ctor, obj);
 }

@@ -46,6 +46,7 @@ std::unique_ptr<llvm::Module> xanxus_module = make_unique<Module>("Xanxus", xanx
 std::unique_ptr<DataLayout> datalayout = make_unique<DataLayout>(xanxus_module.get());
 std::map<std::string, Type*> types_map; // 将所有声明的StructType类型都存储在这里
 std::string class_handling_str;
+std::map<std::string, std::vector<std::string>> type_func_ptrs;
 
 class CgenClassTable : public cool::SymbolTable<Symbol,CgenNode> 
 {
@@ -298,3 +299,5 @@ Constant* util_get_int1(const uint64_t &i) { return ConstantInt::get(Type::getIn
 Function *util_get_builtin_func(const std::string &name);
 std::string util_get_type_name(Type *t);
 Type* util_convert_symbol_to_type(const Symbol& sym);
+int util_get_method_offset(const std::string &class_name, const std::string &method_name);
+Value* util_struct_init(Value *obj);
