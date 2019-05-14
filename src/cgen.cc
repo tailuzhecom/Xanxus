@@ -464,9 +464,7 @@ void CgenClassTable::code_constants()
 // generate code to define a global string constant
 void StringEntry::code_def(ostream& s, CgenClassTable* ct)
 {
-#ifdef MP3
-	// ADD CODE HERE
-#endif
+
 }
 
 // generate code to define a global int constant
@@ -490,6 +488,9 @@ CgenClassTable::CgenClassTable(Classes classes, ostream& s)
 {
 	if (cgen_debug) std::cerr << "Building CgenClassTable" << endl;
 	ct_stream = &s;
+	InitializeNativeTarget();
+	InitializeNativeTargetAsmPrinter();
+	InitializeNativeTargetAsmPrinter();
 	xanxus_module->setDataLayout(xanxus_module->getTargetTriple());
 	// Make sure we have a scope, both for classes and for constants
 	enterscope();
@@ -1033,8 +1034,6 @@ Value* cond_class::code(CgenEnvironment *env)
 Value* loop_class::code(CgenEnvironment *env)
 { 
 	if (cgen_debug) std::cerr << "loop" << endl;
-	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
-	// MORE MEANINGFUL
 
 	Function *curr_func = xanxus_builder.GetInsertBlock()->getParent();
 
@@ -1209,9 +1208,8 @@ Value* object_class::code(CgenEnvironment *env)
 	if (cgen_debug) std::cerr << "Object" << endl;
 
 	// nil == NULL
-	if (std::string(name->get_string()) == "nil")
+	if (std::string(name->get_string()) == "nil" || std::string(name->get_string()) == "self")
 	    return nullptr;
-
 
 	Value *obj_ptr = env->lookup(name->get_string());
 	Value *res = xanxus_builder.CreateLoad(obj_ptr);
@@ -1325,8 +1323,9 @@ Value* dispatch_class::code(CgenEnvironment *env)
 
 	std::string method_without_class = name->get_string();
 	method_without_class += method_suffix;
+	if (cgen_debug) std::cerr << "object generate" << endl;
 	Value *obj = expr->code(env);
-
+	if (cgen_debug) std::cerr << "object generate finish" << endl;
     if (obj) {     // 动态多态，此时obj不为空
 		if (cgen_debug) std::cerr << "object is not null" << endl;
 
@@ -1355,6 +1354,7 @@ Value* dispatch_class::code(CgenEnvironment *env)
         }
     }
 
+    if (cgen_debug) std::cerr << "inner function call" << endl;
     // obj为空，调用形式为method(...)
 	Function *func = xanxus_module->getFunction(call_method_name);
 	if (func == nullptr) {
@@ -1365,6 +1365,7 @@ Value* dispatch_class::code(CgenEnvironment *env)
 	return res;
 }
 
+// TODO
 Value* typcase_class::code(CgenEnvironment *env)
 {
 	if (cgen_debug) 
@@ -1487,14 +1488,16 @@ void method_class::layout_feature(CgenNode *cls)
 
 // If the source tag is >= the branch tag and <= (max child of the branch class) tag,
 // then the branch is a superclass of the source
-Value* branch_class::code(operand expr_val, operand tag,
+Value* branch_class::code(Value* expr_val, Value* branch_val,
 				op_type join_type, CgenEnvironment *env) {
-#ifndef MP3
-	assert(0 && "Unsupported case for phase 1");
-#else
-	// ADD CODE HERE AND REPLACE "return operand()" WITH SOMETHING 
-	// MORE MEANINGFUL
-#endif
+	Function *curr_func = xanxus_builder.GetInsertBlock()->getParent();
+	Value *is_eq = xanxus_builder.CreateICmpEQ(expr_val, branch_val);
+	BasicBlock *true_block = BasicBlock::Create(xanxus_context, "label", curr_func);
+	BasicBlock *false_block = BasicBlock::Create(xanxus_context, "label", curr_func);
+	xanxus_builder.CreateCondBr(is_eq, true_block, false_block);
+	xanxus_builder.SetInsertPoint(true_block);
+	expr->code(env);
+	xanxus_builder.SetInsertPoint(false_block);
 	return nullptr;
 }
 

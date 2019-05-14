@@ -1,19 +1,6 @@
-//
-// This is the MP2 skeleton cgen header.  As given, it contains only basic
-// functionality.  You will need to add members to each of the classes
-// to get them to perform their desired functions.  Document your important
-// design decisions below.  We should be able to read your documentation and
-// get a general overview of how your compiler generates code.  For instance,
-// how does your compiler generate structures for classes, how is inheritance
-// modeled, how do you handle dynamic binding, etc.
-//
+// code generation
 
-// ------------------ INSERT DESIGN DOCUMENTATION HERE --------------------- //
-
-
-// ----------------------------- END DESIGN DOCS --------------------------- //
-
-#include "cool-tree.h"
+#include "xanxus-tree.h"
 #include "symtab.h"
 #include "value_printer.h"
 #include "llvm/IR/LLVMContext.h"
@@ -24,6 +11,7 @@
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Constants.h"
+#include "llvm/Support/TargetSelect.h"
 #include <memory>
 #include <vector>
 #include <map>
@@ -31,7 +19,7 @@
 #include "llvm/Support/raw_os_ostream.h"
 
 //
-// CgenClassTable represents the top level of a Cool program, which is
+// CgenClassTable represents the top level of a xanxus program, which is
 // basically a list of classes.  The class table is used to look up classes
 // (CgenNodes) by name, and it also handles global code generation tasks.
 // The CgenClassTable constructor is where you'll find the entry point for
@@ -48,7 +36,7 @@ std::map<std::string, Type*> types_map; // 将所有声明的StructType类型都
 std::string class_handling_str;
 std::map<std::string, std::vector<std::string>> type_func_ptrs;
 
-class CgenClassTable : public cool::SymbolTable<Symbol,CgenNode> 
+class CgenClassTable : public xanxus::SymbolTable<Symbol,CgenNode>
 {
 private:
 	// Class list
@@ -100,8 +88,6 @@ private:
 	void code_module();
 	void code_constants();
 	void code_main();
-
-	// ADD CODE HERE
 
 };
 

@@ -7,7 +7,7 @@
 #include <iostream>
 #include <string>
 #include "tree.h"
-#include "cool.h"
+#include "xanxus.h"
 #include "stringtab.h"
 #include "symtab.h"
 #include "operand.h"
@@ -107,7 +107,7 @@ void dump_with_types(ostream&,int);
 
 #define Case_EXTRAS                             \
 virtual Symbol get_type_decl() = 0; 		\
-virtual Value* code(operand, operand, const op_type,  \
+virtual Value* code(Value*, Value*, const op_type,  \
 	CgenEnvironment *) = 0;	\
 virtual void dump_with_types(ostream& ,int) = 0;
 
@@ -115,7 +115,7 @@ virtual void dump_with_types(ostream& ,int) = 0;
 #define branch_EXTRAS                                   	\
 Symbol get_type_decl() { return type_decl; } 			\
 Expression get_expr() { return expr; }		\
-Value* code(operand expr_val, operand tag, 	\
+Value* code(Value* expr_val, Value* tag, 	\
 const op_type join_type, CgenEnvironment *env); 	\
 void dump_with_types(ostream& ,int);
 
