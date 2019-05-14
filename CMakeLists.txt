@@ -9,9 +9,9 @@ include_directories(xanxus-support/include)
 add_executable(XanxusProject
         src/cgen.cc
         src/cgen.h
-        src/cool-tree.handcode.h
-        src/coolrt.c
-        src/coolrt.h
+        src/xanxus-tree.handcode.h
+        src/xanxusrt.c
+        src/xanxusrt.h
         src/operand.cc
         src/operand.h
         src/stringtab.handcode.h
@@ -19,10 +19,10 @@ add_executable(XanxusProject
         src/value_printer.h
         xanxus-support/include/ast-parse.h
         xanxus-support/include/cgen_gc.h
-        xanxus-support/include/cool-io.h
-        xanxus-support/include/cool-parse.h
-        xanxus-support/include/cool-tree.h
-        xanxus-support/include/cool.h
+        xanxus-support/include/xanxus-io.h
+        xanxus-support/include/xanxus-parse.h
+        xanxus-support/include/xanxus-tree.h
+        xanxus-support/include/xanxus.h
         xanxus-support/include/list.h
         xanxus-support/include/str_aux.h
         xanxus-support/include/stringtab.h
@@ -34,7 +34,7 @@ add_executable(XanxusProject
         xanxus-support/src/ast-parse.cc
         xanxus-support/src/cgen-phase.cc
         xanxus-support/src/cgen_supp.cc
-        xanxus-support/src/cool-tree.cc
+        xanxus-support/src/xanxus-tree.cc
         xanxus-support/src/dumptype.cc
         xanxus-support/src/handle_flags.cc
         xanxus-support/src/str_aux.cc

@@ -1,13 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "cool-io.h"
+#include "xanxus-io.h"
 #include <unistd.h>
 #include "cgen_gc.h"
 
-//
-// coolc provides a debugging switch for each phase of the compiler,
-// switches to control garbage collection policy, and a switch to enable 
-// optimization.  The optimization flag is ignored by the reference compiler.
 //
 // All flags that can be set on the command line should be defined here;
 // otherwise, it is necessary to pollute test drivers for components of the

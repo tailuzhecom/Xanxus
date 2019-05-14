@@ -1,0 +1,91 @@
+#13
+_program
+  #13
+  _class
+    Main
+    Object
+    "recursion_test.xs"
+    (
+    #4
+    _method
+      main
+      Int
+      #3
+      _dispatch
+        #3
+        _object
+          self
+        : _no_type
+        printlnInt
+        (
+        #3
+        _dispatch
+          #3
+          _object
+            self
+          : _no_type
+          sum
+          (
+          #3
+          _int
+            1
+          : _no_type
+          )
+        : _no_type
+        )
+      : _no_type
+    #12
+    _method
+      sum
+      #6
+      _formal
+        n
+        Int
+      Int
+      #11
+      _cond
+        #7
+        _lt
+          #7
+          _object
+            n
+          : _no_type
+          #7
+          _int
+            10
+          : _no_type
+        : _no_type
+        #9
+        _plus
+          #8
+          _object
+            n
+          : _no_type
+          #8
+          _dispatch
+            #8
+            _object
+              self
+            : _no_type
+            sum
+            (
+            #8
+            _plus
+              #8
+              _object
+                n
+              : _no_type
+              #8
+              _int
+                1
+              : _no_type
+            : _no_type
+            )
+          : _no_type
+        : _no_type
+        #10
+        _int
+          10
+        : _no_type
+      : _no_type
+    )

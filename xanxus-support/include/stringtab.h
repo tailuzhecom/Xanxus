@@ -6,7 +6,7 @@
 #include <assert.h>
 #include <string.h>
 #include "list.h"    // list template
-#include "cool-io.h"
+#include "xanxus-io.h"
 #include "stringtab.handcode.h"
 
 class Entry;

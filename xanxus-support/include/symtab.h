@@ -16,7 +16,7 @@
 #include "list.h"
 
 // added to prevent clash with llvm::SymbolTable
-namespace cool
+namespace xanxus
 {
 
 //

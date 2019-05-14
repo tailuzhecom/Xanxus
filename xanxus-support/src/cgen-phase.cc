@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
-#include "cool-io.h"  //includes iostream
-#include "cool-tree.h"
+#include "xanxus-io.h"  //includes iostream
+#include "xanxus-tree.h"
 #include "cgen_gc.h"
 
 extern int optind;            // for option processing

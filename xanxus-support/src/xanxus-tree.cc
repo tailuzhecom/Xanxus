@@ -1,15 +1,7 @@
-//////////////////////////////////////////////////////////
-//
-// file: cool-tree.cc
-//
-// This file defines the functions of each class
-//
-//////////////////////////////////////////////////////////
-
 
 #include "tree.h"
 #include "xanxus-tree.handcode.h"
-#include "cool-tree.h"
+#include "xanxus-tree.h"
 
 
 // constructors' functions

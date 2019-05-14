@@ -1,6 +1,6 @@
-#include "cool.h"
+#include "xanxus.h"
 #include "tree.h"
-#include "cool-tree.h"
+#include "xanxus-tree.h"
 #include "utilities.h"
 
 // defined in stringtab.cc

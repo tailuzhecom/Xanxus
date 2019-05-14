@@ -1,0 +1,102 @@
+#19
+_program
+  #19
+  _class
+    Main
+    Object
+    "static_poly.xs"
+    (
+    #2
+    _attr
+      a1
+      Int
+      #2
+      _no_expr
+      : _no_type
+    #3
+    _attr
+      a2
+      Bool
+      #3
+      _no_expr
+      : _no_type
+    #10
+    _method
+      main
+      Int
+      #9
+      _block
+        #7
+        _dispatch
+          #7
+          _object
+            self
+          : _no_type
+          add
+          (
+          #7
+          _object
+            a1
+          : _no_type
+          )
+        : _no_type
+        #8
+        _dispatch
+          #8
+          _object
+            self
+          : _no_type
+          add
+          (
+          #8
+          _bool
+            1
+          : _no_type
+          )
+        : _no_type
+      : _no_type
+    #14
+    _method
+      add
+      #12
+      _formal
+        a
+        Int
+      Int
+      #13
+      _dispatch
+        #13
+        _object
+          self
+        : _no_type
+        printlnStr
+        (
+        #13
+        _string
+          "add_with_Int"
+        : _no_type
+        )
+      : _no_type
+    #18
+    _method
+      add
+      #16
+      _formal
+        a
+        Bool
+      Int
+      #17
+      _dispatch
+        #17
+        _object
+          self
+        : _no_type
+        printlnStr
+        (
+        #17
+        _string
+          "add_with_Bool"
+        : _no_type
+        )
+      : _no_type
+    )

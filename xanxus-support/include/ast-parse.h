@@ -4,7 +4,7 @@
 #ifndef _COOL_H_
 #define _COOL_H_
 
-#include "cool-io.h"
+#include "xanxus-io.h"
 
 /* a type renaming */
 typedef int Boolean;

@@ -3,17 +3,16 @@ declare i32 @strcmp(i8*, i8*)
 source_filename = "Xanxus"
 
 %Object_vtable = type {}
-%A_vtable = type { i32 (%A*)* }
-%A = type { %A_vtable* }
-%Main_vtable = type { i32 (%Main*)* }
-%Main = type { %Main_vtable*, %A* }
+%A_vtable = type {}
+%Main_vtable = type { i32 (%Main*)*, i32 (%Main*)* }
+%Main = type { %Main_vtable*, i32, i32 }
 %Object = type { %Object_vtable* }
+%A = type { %A_vtable*, i32, i32 }
 
 @0 = constant %Object_vtable zeroinitializer
-@1 = constant %A_vtable { i32 (%A*)* @A_add_0 }
-@2 = constant %Main_vtable { i32 (%Main*)* @Main_main_0 }
-@3 = private unnamed_addr constant [4 x i8] c"%s\0A\00"
-@4 = private unnamed_addr constant [9 x i8] c"A::add()\00"
+@1 = constant %A_vtable zeroinitializer
+@2 = constant %Main_vtable { i32 (%Main*)* @Main_inherit_test_0, i32 (%Main*)* @Main_main_0 }
+@3 = private unnamed_addr constant [4 x i8] c"%d\0A\00"
 
 declare i32 @printf(i8*, ...)
 
@@ -28,12 +27,6 @@ entry:
   ret void
 }
 
-define i32 @A_add_0(%A* %this) {
-entry:
-  %0 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([9 x i8], [9 x i8]* @4, i32 0, i32 0))
-  ret i32 %0
-}
-
 define void @A_ctor(%A* %this) {
 entry:
   %0 = getelementptr %A, %A* %this, i32 0, i32 0
@@ -41,19 +34,28 @@ entry:
   ret void
 }
 
+define i32 @Main_inherit_test_0(%Main* %this) {
+entry:
+  %0 = getelementptr %Main, %Main* %this, i32 0, i32 1
+  %1 = getelementptr %Main, %Main* %this, i32 0, i32 2
+  store i32 10, i32* %0
+  %2 = load i32, i32* %0
+  %3 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @3, i32 0, i32 0), i32 %2)
+  ret i32 %3
+}
+
 define i32 @Main_main_0(%Main* %this) {
 entry:
   %0 = getelementptr %Main, %Main* %this, i32 0, i32 1
-  ret i32 0
+  %1 = getelementptr %Main, %Main* %this, i32 0, i32 2
+  %2 = call i32 @Main_inherit_test_0(%Main* %this)
+  ret i32 %2
 }
 
 define void @Main_ctor(%Main* %this) {
 entry:
   %0 = getelementptr %Main, %Main* %this, i32 0, i32 0
   store %Main_vtable* @2, %Main_vtable** %0
-  %1 = getelementptr %Main, %Main* %this, i32 0, i32 1
-  %2 = load %A*, %A** %1
-  call void @A_ctor(%A* %2)
   ret void
 }
 

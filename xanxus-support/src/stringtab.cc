@@ -4,10 +4,9 @@
 
 extern char *pad(int n);
 
-//
+
 // Explicit template instantiations.
-// Comment out for versions of g++ prior to 2.7
-//
+
 template class StringTable<IdEntry>;
 template class StringTable<StringEntry>;
 template class StringTable<IntEntry>;

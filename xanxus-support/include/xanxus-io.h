@@ -1,5 +1,5 @@
-#ifndef COOL_IO_H
-#define COOL_IO_H
+#ifndef XANXUS_IO_H
+#define XANXUS_IO_H
 
 //
 // Cool files include this header to use the standard library's

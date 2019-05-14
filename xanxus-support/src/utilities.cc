@@ -12,9 +12,9 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "cool-io.h"     // for cerr, <<, manipulators
+#include "xanxus-io.h"     // for cerr, <<, manipulators
 #include <ctype.h>       // for isprint
-#include "cool-parse.h"  // defines tokens
+#include "xanxus-parse.h"  // defines tokens
 #include "stringtab.h"   // Symbol <-> String conversions
 #include "utilities.h"
 

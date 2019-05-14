@@ -1,6 +1,3 @@
-/* A Bison parser, made from ast.y
-   by GNU bison 1.35.  */
-
 #define YYBISON 1  /* Identify Bison output.  */
 
 #define yyparse ast_yyparse
@@ -48,8 +45,8 @@
 
 #line 6 "ast.y"
 
-#include "cool-io.h"
-#include "cool-tree.h"
+#include "xanxus-io.h"
+#include "xanxus-tree.h"
 #include "stringtab.h"
 #include "utilities.h"
 

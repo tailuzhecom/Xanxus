@@ -1,40 +1,26 @@
-#40
+#16
 _program
-  #9
+  #7
   _class
     A
     Object
     "ret0.xs"
     (
-    #2
-    _attr
-      a
-      Int
-      #2
-      _no_expr
-      : _no_type
-    #3
-    _attr
-      b
-      Int
-      #3
-      _no_expr
-      : _no_type
-    #8
+    #6
     _method
       add
       Int
-      #7
+      #5
       _block
-        #6
+        #4
         _dispatch
-          #6
+          #4
           _object
             self
           : _no_type
           printlnStr
           (
-          #6
+          #4
           _string
             "A::add()"
           : _no_type
@@ -42,148 +28,25 @@ _program
         : _no_type
       : _no_type
     )
-  #17
-  _class
-    B
-    A
-    "ret0.xs"
-    (
-    #13
-    _attr
-      c
-      Int
-      #13
-      _no_expr
-      : _no_type
-    #16
-    _method
-      add
-      Int
-      #16
-      _let
-        b
-        Int
-        #15
-        _no_expr
-        : _no_type
-        #15
-        _int
-          0
-        : _no_type
-      : _no_type
-    )
-  #40
+  #16
   _class
     Main
     Object
     "ret0.xs"
     (
-    #20
-    _attr
-      a1
-      Int
-      #20
-      _no_expr
-      : _no_type
-    #21
-    _attr
-      a2
-      Bool
-      #21
-      _no_expr
-      : _no_type
-    #22
+    #11
     _attr
       a3
       A
-      #22
+      #11
       _no_expr
       : _no_type
-    #31
+    #14
     _method
       main
       Int
-      #29
-      _block
-        #25
-        _assign
-          a3
-          #25
-          _new
-            A
-          : _no_type
-        : _no_type
-        #26
-        _dispatch
-          #26
-          _object
-            self
-          : _no_type
-          add
-          (
-          #26
-          _object
-            a1
-          : _no_type
-          )
-        : _no_type
-        #27
-        _dispatch
-          #27
-          _object
-            self
-          : _no_type
-          add
-          (
-          #27
-          _bool
-            1
-          : _no_type
-          )
-        : _no_type
-      : _no_type
-    #35
-    _method
-      add
-      #33
-      _formal
-        a
-        Int
-      Int
-      #34
-      _dispatch
-        #34
-        _object
-          self
-        : _no_type
-        printlnStr
-        (
-        #34
-        _string
-          "add_with_Int"
-        : _no_type
-        )
-      : _no_type
-    #39
-    _method
-      add
-      #37
-      _formal
-        a
-        Bool
-      Int
-      #38
-      _dispatch
-        #38
-        _object
-          self
-        : _no_type
-        printlnStr
-        (
-        #38
-        _string
-          "add_with_Bool"
-        : _no_type
-        )
+      #13
+      _int
+        0
       : _no_type
     )

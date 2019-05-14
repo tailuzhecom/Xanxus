@@ -8,7 +8,7 @@ PARSER  = $(MPDIR)/tools-bin/parser
 SEMANT  = $(MPDIR)/tools-bin/semant
 
 ifdef MP3
-COOLRT  = $(MPDIR)/src/coolrt.o
+COOLRT  = $(MPDIR)/src/xanxusrt.o
 else
 COOLRT  = 
 endif
