@@ -805,14 +805,16 @@ void CgenNode::create_ctor()
 
     	if (member->isPointerTy()) { // 只有非primitive类型的成员才以指针的形式存在
     		Type *member_type = member->getPointerElementType();
+    		// 当前成员只为它的指针分配空间，现在为该成员的实例分配空间
+    		GlobalVariable *global_elem_val = new GlobalVariable(*xanxus_module, member_type, false, GlobalVariable::InternalLinkage, ConstantAggregateZero::get(member));
     		std::string member_ctor_name = member_type->getStructName().str() + "_ctor";
     		Function *member_ctor = xanxus_module->getFunction(member_ctor_name);		// 获取该成员的构造函数
     		if (member_ctor == nullptr)
     			std::cerr << "This ctor doesn't exist" << std::endl;
     		std::vector<Value*> gep_list({util_get_int32(0), util_get_int32(member_idx)});
     		Value *attr_ptr = xanxus_builder.CreateGEP(this_ptr, gep_list);
-    		Value *attr = xanxus_builder.CreateLoad(attr_ptr);
-    		xanxus_builder.CreateCall(member_ctor, {attr});
+    		xanxus_builder.CreateStore(global_elem_val, attr_ptr);
+    		xanxus_builder.CreateCall(member_ctor, {global_elem_val});
     	}
     	member_idx++;
     }
