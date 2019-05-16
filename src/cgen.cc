@@ -401,8 +401,7 @@ CgenNode *CgenClassTable::root()
 
 //////////////////////////////////////////////////////////////////////
 //
-// Special-case functions used for the method Int Main::main() for
-// MP2-1 only.
+// Special-case functions used for the method Int Main::main()
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -424,33 +423,7 @@ CgenNode* CgenClassTable::getMainmain(CgenNode* c)
 
 #endif
 
-//-------------------------------------------------------------------
-//
-// END OF PREDEFINED FUNCTIONS
-//
-//-------------------------------------------------------------------
 
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// coding string, int, and boolean constants
-//
-// Cool has three kinds of constants: strings, ints, and booleans.
-// This section defines code generation for each type.
-//
-// All string constants are listed in the global "stringtable" and have
-// type stringEntry.  stringEntry methods are defined both for string
-// constant definitions and references.
-//
-// All integer constants are listed in the global "inttable" and have
-// type IntEntry.  IntEntry methods are defined for Int
-// constant definitions and references.
-//
-// Since there are only two Bool values, there is no need for a table.
-// The two booleans are represented by instances of the class BoolConst,
-// which defines the definition and reference methods for Bools.
-//
-///////////////////////////////////////////////////////////////////////////////
 
 //
 // Create global definitions for constant Cool objects
@@ -804,7 +777,11 @@ void CgenNode::create_ctor()
 		}
 
     	if (member->isPointerTy()) { // 只有非primitive类型的成员才以指针的形式存在
+    	    if (member == Type::getInt8PtrTy(xanxus_context))   // 跳过i8*
+                continue;
+
     		Type *member_type = member->getPointerElementType();
+
     		// 当前成员只为它的指针分配空间，现在为该成员的实例分配空间
     		GlobalVariable *global_elem_val = new GlobalVariable(*xanxus_module, member_type, false, GlobalVariable::InternalLinkage, ConstantAggregateZero::get(member));
     		std::string member_ctor_name = member_type->getStructName().str() + "_ctor";
@@ -1527,6 +1504,10 @@ void CgenNode::setup_attr_types(Symbol type_decl, CgenNode *cls) {
 		cls->attr_types.push_back(Type::getInt32Ty(xanxus_context));
 	else if (type_str == "Bool")
 		cls->attr_types.push_back(Type::getInt1Ty(xanxus_context));
+    else if (type_str == "String")
+        cls->attr_types.push_back(Type::getInt8Ty(xanxus_context)->getPointerTo());
+    else if (type_str == "Float")
+        cls->attr_types.push_back(Type::getFloatTy(xanxus_context));
     else if (xanxus_module->getTypeByName(type_str))
         cls->attr_types.push_back(xanxus_module->getTypeByName(type_str)->getPointerTo());
 }
@@ -1567,11 +1548,13 @@ Type* util_convert_symbol_to_type(const Symbol& sym) {
     else if (type_str == "Object")
         return Type::getVoidTy(xanxus_context);     // TODO
     else if (type_str == "String")
-        return Type::getInt32Ty(xanxus_context)->getPointerTo(); // TODO
+        return Type::getInt8Ty(xanxus_context)->getPointerTo(); // TODO
     else if (type_str == "SELF_TYPE")
         return Type::getVoidTy(xanxus_context); // TODO
     else if (type_str == "Void")
         return Type::getVoidTy(xanxus_context);
+    else if (type_str == "Float")
+        return Type::getDoubleTy(xanxus_context);
     else
         return xanxus_module->getTypeByName(type_str);
 
